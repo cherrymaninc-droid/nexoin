@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ArrowUpRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { scrollToId } from "@/hooks/useSmoothScroll";
 
 const Wordmark = ({ className = "" }) => (
   <span className={`font-display font-extrabold tracking-tight leading-none ${className}`}>
@@ -31,14 +32,18 @@ export const Navbar = () => {
       navigate("/#" + id);
       return;
     }
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    scrollToId(id);
   };
 
-  const navItems = [
+  const goContact = () => {
+    setOpen(false);
+    navigate("/contact");
+  };
+
+  const scrollItems = [
     { id: "services", label: t.nav.services },
     { id: "manifesto", label: t.nav.manifesto },
     { id: "network", label: t.nav.network },
-    { id: "contact", label: t.nav.contact },
   ];
 
   return (
@@ -54,7 +59,7 @@ export const Navbar = () => {
         </Link>
 
         <nav className="hidden md:flex items-center gap-9 font-mono-tech text-xs uppercase tracking-widest text-zinc-600">
-          {navItems.map((item) => (
+          {scrollItems.map((item) => (
             <button
               key={item.id}
               data-testid={`nav-${item.id}`}
@@ -65,6 +70,14 @@ export const Navbar = () => {
               <span className="absolute -bottom-1 left-0 h-px w-0 bg-[#0044ff] transition-all duration-300 group-hover:w-full" />
             </button>
           ))}
+          <button
+            data-testid="nav-contact"
+            onClick={goContact}
+            className="relative hover:text-[#0a0a0a] transition-colors duration-300 group"
+          >
+            {t.nav.contact}
+            <span className="absolute -bottom-1 left-0 h-px w-0 bg-[#0044ff] transition-all duration-300 group-hover:w-full" />
+          </button>
         </nav>
 
         <div className="flex items-center gap-3 md:gap-6">
@@ -114,7 +127,7 @@ export const Navbar = () => {
             className="md:hidden overflow-hidden bg-white border-b border-black/10"
           >
             <div className="px-6 py-8 flex flex-col gap-6">
-              {navItems.map((item) => (
+              {scrollItems.map((item) => (
                 <button
                   key={item.id}
                   data-testid={`mobile-nav-${item.id}`}
@@ -124,6 +137,13 @@ export const Navbar = () => {
                   {item.label}
                 </button>
               ))}
+              <button
+                data-testid="mobile-nav-contact"
+                onClick={goContact}
+                className="text-left font-display text-3xl text-[#0a0a0a]"
+              >
+                {t.nav.contact}
+              </button>
               <Link
                 to="/quote"
                 data-testid="mobile-nav-quote"

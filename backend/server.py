@@ -169,6 +169,81 @@ def _quote_email_html(quote: "Quote") -> str:
     )
 
 
+_CONFIRM_COPY = {
+    "en": {
+        "subject": "We've received your NEXOIN quote request",
+        "hi": "Hi",
+        "body": "Thanks for reaching out to NEXOIN. Our routing desk has received your request and will reply with a binding quote within 2 hours.",
+        "route": "Route",
+        "cargo": "Cargo",
+        "foot": "Sent by NEXOIN B2B Transport. We never ask for passwords or payment details by email.",
+    },
+    "fr": {
+        "subject": "Nous avons bien recu votre demande de devis NEXOIN",
+        "hi": "Bonjour",
+        "body": "Merci d'avoir contacte NEXOIN. Notre cellule de routage a bien recu votre demande et vous repondra avec un devis ferme sous 2 heures.",
+        "route": "Trajet",
+        "cargo": "Marchandise",
+        "foot": "Envoye par NEXOIN B2B Transport. Nous ne demandons jamais de mot de passe ou de coordonnees bancaires par e-mail.",
+    },
+    "de": {
+        "subject": "Wir haben Ihre NEXOIN-Angebotsanfrage erhalten",
+        "hi": "Hallo",
+        "body": "Danke fuer Ihre Anfrage bei NEXOIN. Unser Routing-Team hat Ihre Anfrage erhalten und meldet sich innerhalb von 2 Stunden mit einem verbindlichen Angebot.",
+        "route": "Strecke",
+        "cargo": "Fracht",
+        "foot": "Gesendet von NEXOIN B2B Transport. Wir fragen niemals per E-Mail nach Passwoertern oder Zahlungsdaten.",
+    },
+}
+
+
+def _confirmation_email_html(quote: "Quote") -> str:
+    c = _CONFIRM_COPY.get((quote.language or "en"), _CONFIRM_COPY["en"])
+    return (
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        f'style="background:#f4f3ef;padding:32px"><tr><td align="center">'
+        f'<table role="presentation" width="560" cellpadding="0" cellspacing="0" '
+        f'style="background:#ffffff;border:1px solid #e4e4e7">'
+        f'<tr><td style="background:#0a0a0a;padding:20px 28px">'
+        f'<span style="color:#ffffff;font-family:Arial,sans-serif;font-size:20px;font-weight:800;'
+        f'letter-spacing:-0.5px">NEXOIN<span style="color:#0044ff">.</span></span></td></tr>'
+        f'<tr><td style="padding:28px;font-family:Arial,sans-serif;color:#0a0a0a">'
+        f'<p style="font-size:16px;margin:0 0 12px">{escape(c["hi"])} {escape(quote.name)},</p>'
+        f'<p style="font-size:14px;line-height:1.6;color:#3f3f46;margin:0 0 20px">{escape(c["body"])}</p>'
+        f'<p style="font-size:13px;margin:0 0 6px"><strong>{escape(c["route"])}:</strong> '
+        f'{escape(quote.origin)} &rarr; {escape(quote.destination)}</p>'
+        f'<p style="font-size:13px;margin:0"><strong>{escape(c["cargo"])}:</strong> {escape(quote.cargoType)}</p>'
+        f'</td></tr>'
+        f'<tr><td style="padding:16px 28px;border-top:1px solid #e4e4e7">'
+        f'<span style="color:#a1a1aa;font-family:Arial,sans-serif;font-size:12px">{escape(c["foot"])}</span>'
+        f'</td></tr></table></td></tr></table>'
+    )
+
+
+def _contact_email_html(contact: "Contact") -> str:
+    return (
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        f'style="background:#f4f3ef;padding:32px"><tr><td align="center">'
+        f'<table role="presentation" width="560" cellpadding="0" cellspacing="0" '
+        f'style="background:#ffffff;border:1px solid #e4e4e7">'
+        f'<tr><td style="background:#0a0a0a;padding:20px 28px">'
+        f'<span style="color:#ffffff;font-family:Arial,sans-serif;font-size:20px;font-weight:800">'
+        f'NEXOIN<span style="color:#0044ff">.</span></span>'
+        f'<div style="color:#a1a1aa;font-family:Arial,sans-serif;font-size:11px;letter-spacing:2px;'
+        f'margin-top:4px">NEW ENQUIRY</div></td></tr>'
+        f'<tr><td style="padding:28px;font-family:Arial,sans-serif;color:#0a0a0a">'
+        f'<p style="font-size:14px;margin:0 0 6px"><strong>Name:</strong> {escape(contact.name)}</p>'
+        f'<p style="font-size:14px;margin:0 0 6px"><strong>Email:</strong> {escape(contact.email)}</p>'
+        f'<p style="font-size:14px;margin:0 0 6px"><strong>Company:</strong> '
+        f'{escape(contact.company) if contact.company else "&mdash;"}</p>'
+        f'<p style="font-size:14px;margin:16px 0 0;line-height:1.6;color:#3f3f46">{escape(contact.message)}</p>'
+        f'</td></tr>'
+        f'<tr><td style="padding:16px 28px;border-top:1px solid #e4e4e7">'
+        f'<span style="color:#a1a1aa;font-family:Arial,sans-serif;font-size:12px">'
+        f'Sent by NEXOIN B2B Transport.</span></td></tr></table></td></tr></table>'
+    )
+
+
 # ---- Models ---------------------------------------------------------------
 class StatusCheck(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -209,6 +284,45 @@ class QuoteStatusUpdate(BaseModel):
 ALLOWED_STATUSES = {"new", "contacted", "closed"}
 
 
+DEFAULT_SETTINGS = {
+    "id": "site",
+    "notification_email": "",
+    "contact_email": "ops@nexoin.eu",
+    "contact_phone": "+32 10 000 000",
+    "contact_locations": "Rotterdam · Frankfurt · Lyon",
+}
+
+
+class Settings(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    notification_email: str = ""
+    contact_email: str = "ops@nexoin.eu"
+    contact_phone: str = "+32 10 000 000"
+    contact_locations: str = "Rotterdam · Frankfurt · Lyon"
+
+
+async def get_settings() -> dict:
+    doc = await db.settings.find_one({"id": "site"}, {"_id": 0})
+    if not doc:
+        await db.settings.insert_one(dict(DEFAULT_SETTINGS))
+        return dict(DEFAULT_SETTINGS)
+    return doc
+
+
+class ContactCreate(BaseModel):
+    name: str
+    email: EmailStr
+    company: Optional[str] = ""
+    message: str
+    language: Optional[str] = "en"
+
+
+class Contact(ContactCreate):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
 # ---- Routes ---------------------------------------------------------------
 @api_router.get("/")
 async def root():
@@ -239,14 +353,24 @@ async def create_quote(payload: QuoteCreate):
     await db.quotes.insert_one(quote.model_dump())
     logger.info("New quote request from %s (%s)", quote.company, quote.email)
 
-    # Fire notification to the ops team. Never let email failure break the quote.
-    if EMAIL_KEY and OWNER_EMAIL:
+    if EMAIL_KEY:
+        settings = await get_settings()
+        notify_to = settings.get("notification_email") or OWNER_EMAIL
+        # Internal notification to the ops team.
+        if notify_to:
+            try:
+                subject = f"New quote: {quote.company} - {quote.origin} to {quote.destination}"
+                await send_email(to=notify_to, subject=subject, html=_quote_email_html(quote))
+                logger.info("Quote notification email sent to %s", notify_to)
+            except Exception as e:
+                logger.error("Quote notification email failed: %s", str(e))
+        # Instant confirmation to the customer who submitted the request.
         try:
-            subject = f"New quote: {quote.company} - {quote.origin} to {quote.destination}"
-            await send_email(to=OWNER_EMAIL, subject=subject, html=_quote_email_html(quote))
-            logger.info("Quote notification email sent to %s", OWNER_EMAIL)
+            c = _CONFIRM_COPY.get((quote.language or "en"), _CONFIRM_COPY["en"])
+            await send_email(to=quote.email, subject=c["subject"], html=_confirmation_email_html(quote))
+            logger.info("Confirmation email sent to %s", quote.email)
         except Exception as e:
-            logger.error("Quote notification email failed: %s", str(e))
+            logger.error("Confirmation email failed: %s", str(e))
 
     return quote
 
@@ -270,6 +394,46 @@ async def update_quote_status(quote_id: str, payload: QuoteStatusUpdate):
     if not result:
         raise HTTPException(status_code=404, detail="Quote not found")
     return Quote(**result)
+
+
+@api_router.get("/settings", response_model=Settings)
+async def read_settings():
+    return Settings(**await get_settings())
+
+
+@api_router.put("/settings", response_model=Settings)
+async def update_settings(payload: Settings):
+    data = payload.model_dump()
+    data["id"] = "site"
+    await db.settings.update_one({"id": "site"}, {"$set": data}, upsert=True)
+    return Settings(**data)
+
+
+@api_router.post("/contacts", response_model=Contact)
+async def create_contact(payload: ContactCreate):
+    contact = Contact(**payload.model_dump())
+    await db.contacts.insert_one(contact.model_dump())
+    logger.info("New enquiry from %s (%s)", contact.name, contact.email)
+    if EMAIL_KEY:
+        settings = await get_settings()
+        notify_to = settings.get("notification_email") or OWNER_EMAIL
+        if notify_to:
+            try:
+                await send_email(
+                    to=notify_to,
+                    subject=f"New enquiry from {contact.name}",
+                    html=_contact_email_html(contact),
+                )
+                logger.info("Contact notification email sent to %s", notify_to)
+            except Exception as e:
+                logger.error("Contact notification email failed: %s", str(e))
+    return contact
+
+
+@api_router.get("/contacts", response_model=List[Contact])
+async def list_contacts():
+    contacts = await db.contacts.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return [Contact(**c) for c in contacts]
 
 
 app.include_router(api_router)

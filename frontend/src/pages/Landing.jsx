@@ -9,11 +9,12 @@ import { Network } from "@/components/Network";
 import { Footer } from "@/components/Footer";
 import { Reveal } from "@/components/Reveal";
 import { useLanguage } from "@/context/LanguageContext";
+import { scrollToId } from "@/hooks/useSmoothScroll";
 
 const IMAGES = {
-  hero: "https://images.pexels.com/photos/27508769/pexels-photo-27508769.jpeg",
-  port: "https://images.unsplash.com/photo-1590497008432-598f04441de8",
-  warehouse: "https://images.pexels.com/photos/2348359/pexels-photo-2348359.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=900",
+  hero: "https://static.prod-images.emergentagent.com/jobs/2d80bc58-a5d4-4a6f-ac9c-71d83914dbad/images/157ec583c00e282fc35c604ea94f031499ba86565fee2ae5c10607a845f8e01f.jpeg",
+  truck: "https://static.prod-images.emergentagent.com/jobs/2d80bc58-a5d4-4a6f-ac9c-71d83914dbad/images/85a8fd185a858f444157f85da358f0579b5ee04491066f9021f40c6e0f01167f.jpeg",
+  van: "https://static.prod-images.emergentagent.com/jobs/2d80bc58-a5d4-4a6f-ac9c-71d83914dbad/images/e672e39e91b7ed3dbe18494920f5ed120235ccc81f33bf8253647ec15dfcfe56.jpeg",
   highway: "https://images.pexels.com/photos/33707847/pexels-photo-33707847.jpeg",
 };
 
@@ -39,7 +40,7 @@ export default function Landing() {
   useEffect(() => {
     if (hash) {
       const id = hash.replace("#", "");
-      setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" }), 300);
+      setTimeout(() => scrollToId(id), 400);
     } else {
       window.scrollTo(0, 0);
     }
@@ -52,7 +53,7 @@ export default function Landing() {
         <Hero heroImg={IMAGES.hero} />
         <Marquee />
         <Stats />
-        <Services imgA={IMAGES.warehouse} imgB={IMAGES.port} />
+        <Services imgA={IMAGES.truck} imgB={IMAGES.van} />
         <Manifesto />
         <Network networkImg={IMAGES.highway} />
       </main>

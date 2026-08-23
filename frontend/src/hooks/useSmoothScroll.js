@@ -11,6 +11,7 @@ export const useSmoothScroll = () => {
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
     });
+    window.__lenis = lenis;
 
     let rafId;
     function raf(time) {
@@ -22,6 +23,17 @@ export const useSmoothScroll = () => {
     return () => {
       cancelAnimationFrame(rafId);
       lenis.destroy();
+      window.__lenis = null;
     };
   }, []);
+};
+
+export const scrollToId = (id) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (window.__lenis) {
+    window.__lenis.scrollTo(el, { offset: -80, duration: 1.1 });
+  } else {
+    el.scrollIntoView({ behavior: "smooth" });
+  }
 };

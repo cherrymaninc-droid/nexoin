@@ -33,8 +33,20 @@ Build the official website for **NEXOIN**, a modern European B2B transport & log
 - OWNER_EMAIL is a placeholder (`ops@nexoin.eu`, undeliverable domain → send returns 422). Needs the user's REAL notification email in backend/.env for alerts to actually deliver.
 - `/admin` is unprotected (open URL) per user choice.
 
+## Implemented (2026-08-23, iteration 3)
+- **Menu fix**: nav now smooth-scrolls via Lenis (`scrollToId`, ~80px offset) for Services/Manifesto/Network; "Contact" routes to a new page.
+- **Contact page** (`/contact`): full Navbar + Footer, contact info (email/phone/locations from settings) and an enquiry form → `POST /api/contacts` (saved + internal notification email). Trilingual.
+- **Admin site settings**: `/admin` has a "Site settings" panel to edit the notification email and public contact info → `PUT /api/settings`. Site footer/contact/quote read these live via `SettingsContext` (`GET /api/settings`).
+- **Customer confirmation email**: on quote submit, backend sends an instant localized confirmation to the submitter (EN/FR/DE) plus the internal ops notification. Both wrapped so email failure never breaks the request.
+- **European vehicles**: replaced US/warehouse imagery with generated European lorry + 3.5t transporter van photos (hero + services).
+- Verified by testing_agent iteration_3: backend 14/14, frontend 100%, no blocking issues. Test data cleared.
+
+## Known Pending
+- OWNER_EMAIL / notification_email still a placeholder until the user provides a real inbox (set it in `/admin` → Site settings). Undeliverable placeholder returns 422 but quote/contact still save.
+- `/admin` and `PUT /api/settings` remain unauthenticated (open URL) per user choice.
+
 ## Backlog
-- P1: Set real OWNER_EMAIL so alerts deliver.
-- P2: Optional password protection for /admin.
+- P1: User to set real notification email in admin settings.
+- P2: Optional password/guard for /admin + settings.
+- P2: Validate contact_email as an email in settings.
 - P2: Interactive European route map in Network section.
-- P2: Cookie/consent + legal page content.

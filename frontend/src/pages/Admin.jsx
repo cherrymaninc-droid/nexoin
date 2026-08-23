@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { RefreshCw, ArrowLeft, Mail, Phone, MapPin, Package, Search } from "lucide-react";
+import { RefreshCw, ArrowLeft, Mail, Phone, MapPin, Package, Search, Settings, Save } from "lucide-react";
 import { toast } from "sonner";
+import { useSettings } from "@/context/SettingsContext";
 import { Wordmark } from "@/components/Navbar";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -86,6 +87,7 @@ export default function Admin() {
       </header>
 
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-10 md:py-14">
+        <SettingsPanel />
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div>
             <h1 className="font-display font-extrabold tracking-tighter text-4xl md:text-6xl">Incoming requests.</h1>
@@ -199,6 +201,69 @@ export default function Admin() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+
+function SettingsPanel() {
+  const { settings, setSettings } = useSettings();
+  const [form, setForm] = useState(settings);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setForm(settings);
+  }, [settings]);
+
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const { data } = await axios.put(`${API}/settings`, form);
+      setSettings({ ...data });
+      toast.success("Settings saved");
+    } catch (e) {
+      toast.error("Save failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const rows = [
+    ["notification_email", "Notification email (where quote alerts are sent)"],
+    ["contact_email", "Public contact email"],
+    ["contact_phone", "Public phone"],
+    ["contact_locations", "Locations"],
+  ];
+
+  return (
+    <div data-testid="admin-settings" className="bg-white border border-black/10 p-6 md:p-8 mb-12">
+      <div className="flex items-center gap-2 mb-6">
+        <Settings size={16} className="text-[#0044ff]" />
+        <h2 className="font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500">Site settings</h2>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-x-8 gap-y-6">
+        {rows.map(([k, label]) => (
+          <div key={k} className="flex flex-col gap-2">
+            <label className="font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500">{label}</label>
+            <input
+              data-testid={`settings-${k}`}
+              value={form[k] || ""}
+              onChange={set(k)}
+              className="bg-transparent border-0 border-b border-black/15 h-11 text-[#0a0a0a] text-sm focus:outline-none focus:border-[#0044ff] transition-colors"
+            />
+          </div>
+        ))}
+      </div>
+      <button
+        data-testid="settings-save"
+        onClick={save}
+        disabled={saving}
+        className="mt-8 inline-flex items-center gap-2 bg-[#0a0a0a] text-white px-6 py-3 font-mono-tech text-[11px] uppercase tracking-widest hover:bg-[#0044ff] transition-colors disabled:opacity-60"
+      >
+        <Save size={14} /> {saving ? "Saving…" : "Save settings"}
+      </button>
     </div>
   );
 }

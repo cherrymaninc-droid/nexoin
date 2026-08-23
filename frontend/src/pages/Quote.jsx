@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLanguage } from "@/context/LanguageContext";
+import { useSettings } from "@/context/SettingsContext";
 import { Wordmark } from "@/components/Navbar";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -37,6 +38,7 @@ const fieldCls =
 
 export default function Quote() {
   const { t, lang, setLang, langs } = useLanguage();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const [form, setForm] = useState(empty);
   const [loading, setLoading] = useState(false);
@@ -108,7 +110,7 @@ export default function Quote() {
             </h1>
             <p className="mt-8 text-zinc-600 text-base md:text-lg leading-relaxed max-w-md">{t.quote.desc}</p>
             <div className="mt-10 font-mono-tech text-sm text-zinc-500">
-              ops@nexoin.eu · +32 10 000 000
+              {settings.contact_email} · {settings.contact_phone}
             </div>
           </div>
         </div>
