@@ -40,6 +40,11 @@ export const Navbar = () => {
     navigate("/contact");
   };
 
+  const goCareers = () => {
+    setOpen(false);
+    navigate("/careers");
+  };
+
   const scrollItems = [
     { id: "services", label: t.nav.services },
     { id: "manifesto", label: t.nav.manifesto },
@@ -70,6 +75,14 @@ export const Navbar = () => {
               <span className="absolute -bottom-1 left-0 h-px w-0 bg-[#0044ff] transition-all duration-300 group-hover:w-full" />
             </button>
           ))}
+          <button
+            data-testid="nav-careers"
+            onClick={goCareers}
+            className="relative hover:text-[#0a0a0a] transition-colors duration-300 group"
+          >
+            {t.nav.careers}
+            <span className="absolute -bottom-1 left-0 h-px w-0 bg-[#0044ff] transition-all duration-300 group-hover:w-full" />
+          </button>
           <button
             data-testid="nav-contact"
             onClick={goContact}
@@ -137,6 +150,13 @@ export const Navbar = () => {
                   {item.label}
                 </button>
               ))}
+              <button
+                data-testid="mobile-nav-careers"
+                onClick={goCareers}
+                className="text-left font-display text-3xl text-[#0a0a0a]"
+              >
+                {t.nav.careers}
+              </button>
               <button
                 data-testid="mobile-nav-contact"
                 onClick={goContact}

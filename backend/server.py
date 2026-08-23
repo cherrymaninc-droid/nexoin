@@ -327,6 +327,21 @@ class Contact(ContactCreate):
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
+class ApplicationCreate(BaseModel):
+    name: str
+    email: EmailStr
+    phone: Optional[str] = ""
+    role: str
+    message: Optional[str] = ""
+    language: Optional[str] = "en"
+
+
+class Application(ApplicationCreate):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
 # ---- Routes ---------------------------------------------------------------
 @api_router.get("/")
 async def root():
@@ -465,6 +480,67 @@ async def delete_contact(contact_id: str):
     res = await db.contacts.delete_one({"id": contact_id})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
+    return {"status": "deleted"}
+
+
+def _application_email_html(app_obj: "Application") -> str:
+    return (
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        f'style="background:#f4f3ef;padding:32px"><tr><td align="center">'
+        f'<table role="presentation" width="560" cellpadding="0" cellspacing="0" '
+        f'style="background:#ffffff;border:1px solid #e4e4e7">'
+        f'<tr><td style="background:#0a0a0a;padding:20px 28px">'
+        f'<span style="color:#ffffff;font-family:Arial,sans-serif;font-size:20px;font-weight:800">'
+        f'NEXOIN<span style="color:#0044ff">.</span></span>'
+        f'<div style="color:#a1a1aa;font-family:Arial,sans-serif;font-size:11px;letter-spacing:2px;'
+        f'margin-top:4px">NEW APPLICATION</div></td></tr>'
+        f'<tr><td style="padding:28px;font-family:Arial,sans-serif;color:#0a0a0a">'
+        f'<p style="font-size:14px;margin:0 0 6px"><strong>Name:</strong> {escape(app_obj.name)}</p>'
+        f'<p style="font-size:14px;margin:0 0 6px"><strong>Email:</strong> {escape(app_obj.email)}</p>'
+        f'<p style="font-size:14px;margin:0 0 6px"><strong>Phone:</strong> '
+        f'{escape(app_obj.phone) if app_obj.phone else "&mdash;"}</p>'
+        f'<p style="font-size:14px;margin:0 0 6px"><strong>Role:</strong> {escape(app_obj.role)}</p>'
+        f'<p style="font-size:14px;margin:16px 0 0;line-height:1.6;color:#3f3f46">'
+        f'{escape(app_obj.message) if app_obj.message else ""}</p>'
+        f'</td></tr>'
+        f'<tr><td style="padding:16px 28px;border-top:1px solid #e4e4e7">'
+        f'<span style="color:#a1a1aa;font-family:Arial,sans-serif;font-size:12px">'
+        f'Sent by NEXOIN B2B Transport.</span></td></tr></table></td></tr></table>'
+    )
+
+
+@api_router.post("/applications", response_model=Application)
+async def create_application(payload: ApplicationCreate):
+    application = Application(**payload.model_dump())
+    await db.applications.insert_one(application.model_dump())
+    logger.info("New application from %s (%s) for %s", application.name, application.email, application.role)
+    if EMAIL_KEY:
+        settings = await get_settings()
+        notify_to = settings.get("notification_email") or OWNER_EMAIL
+        if notify_to:
+            try:
+                await send_email(
+                    to=notify_to,
+                    subject=f"New application: {application.role} - {application.name}",
+                    html=_application_email_html(application),
+                )
+                logger.info("Application notification sent to %s", notify_to)
+            except Exception as e:
+                logger.error("Application notification failed: %s", str(e))
+    return application
+
+
+@api_router.get("/applications", response_model=List[Application])
+async def list_applications():
+    apps = await db.applications.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return [Application(**a) for a in apps]
+
+
+@api_router.delete("/applications/{application_id}")
+async def delete_application(application_id: str):
+    res = await db.applications.delete_one({"id": application_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Application not found")
     return {"status": "deleted"}
 
 

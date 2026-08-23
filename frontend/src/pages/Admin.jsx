@@ -31,6 +31,7 @@ export default function Admin() {
   const [tab, setTab] = useState("quotes");
   const [quotes, setQuotes] = useState([]);
   const [contacts, setContacts] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [q, setQ] = useState("");
@@ -39,9 +40,10 @@ export default function Admin() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [qs, cs] = await Promise.all([axios.get(`${API}/quotes`), axios.get(`${API}/contacts`)]);
+      const [qs, cs, as] = await Promise.all([axios.get(`${API}/quotes`), axios.get(`${API}/contacts`), axios.get(`${API}/applications`)]);
       setQuotes(qs.data);
       setContacts(cs.data);
+      setApplications(as.data);
     } catch (e) {
       toast.error("Failed to load data");
     } finally {
@@ -81,6 +83,17 @@ export default function Admin() {
       await axios.delete(`${API}/contacts/${id}`);
       setContacts((prev) => prev.filter((x) => x.id !== id));
       toast.success("Enquiry deleted");
+    } catch (e) {
+      toast.error("Delete failed");
+    }
+  };
+
+  const deleteApplication = async (id) => {
+    if (!window.confirm("Delete this application permanently?")) return;
+    try {
+      await axios.delete(`${API}/applications/${id}`);
+      setApplications((prev) => prev.filter((x) => x.id !== id));
+      toast.success("Application deleted");
     } catch (e) {
       toast.error("Delete failed");
     }
@@ -138,7 +151,7 @@ export default function Admin() {
 
         {/* Tabs */}
         <div className="flex items-center gap-2 mb-10 border-b border-black/10">
-          {[["quotes", `Quotes (${quotes.length})`], ["contacts", `Enquiries (${contacts.length})`]].map(([k, label]) => (
+          {[["quotes", `Quotes (${quotes.length})`], ["contacts", `Enquiries (${contacts.length})`], ["applications", `Applications (${applications.length})`]].map(([k, label]) => (
             <button
               key={k}
               data-testid={`admin-tab-${k}`}
@@ -152,7 +165,7 @@ export default function Admin() {
           ))}
         </div>
 
-        {tab === "quotes" ? (
+        {tab === "quotes" && (
           <>
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
               <div>
@@ -276,7 +289,9 @@ export default function Admin() {
               </div>
             )}
           </>
-        ) : (
+        )}
+
+        {tab === "contacts" && (
           <>
             <h1 className="font-display font-extrabold tracking-tighter text-4xl md:text-6xl mb-8">Enquiries.</h1>
             {loading ? (
@@ -306,6 +321,42 @@ export default function Admin() {
                       onClick={() => deleteContact(x.id)}
                       className="self-start inline-flex items-center gap-2 px-4 py-2 font-mono-tech text-[11px] uppercase tracking-widest border border-black/15 text-red-500 hover:border-red-500 transition-colors"
                     >
+                      <Trash2 size={12} /> Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {tab === "applications" && (
+          <>
+            <h1 className="font-display font-extrabold tracking-tighter text-4xl md:text-6xl mb-8">Applications.</h1>
+            {loading ? (
+              <div className="py-24 text-center font-mono-tech text-sm text-zinc-500">Loading…</div>
+            ) : applications.length === 0 ? (
+              <div data-testid="admin-applications-empty" className="py-24 text-center font-mono-tech text-sm text-zinc-500 border border-dashed border-black/15">
+                No applications yet.
+              </div>
+            ) : (
+              <div className="grid gap-4" data-testid="admin-applications-list">
+                {applications.map((x) => (
+                  <div key={x.id} data-testid={`admin-application-${x.id}`} className="bg-white border border-black/10 p-6 md:p-8 flex flex-col md:flex-row gap-6 justify-between">
+                    <div className="max-w-2xl">
+                      <div className="flex items-center gap-3">
+                        <span className="px-2 py-1 font-mono-tech text-[10px] uppercase tracking-widest bg-[#0044ff] text-white">{x.role}</span>
+                        <span className="font-mono-tech text-[11px] text-zinc-400 uppercase">{(x.language || "en").toUpperCase()}</span>
+                      </div>
+                      <h3 className="mt-3 font-display font-bold text-xl tracking-tight">{x.name}</h3>
+                      <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 font-mono-tech text-xs text-zinc-600">
+                        <a href={`mailto:${x.email}`} className="flex items-center gap-2 hover:text-[#0044ff]"><Mail size={12} /> {x.email}</a>
+                        {x.phone ? <span className="flex items-center gap-2"><Phone size={12} /> {x.phone}</span> : null}
+                      </div>
+                      {x.message ? <p className="mt-3 text-sm text-zinc-600 leading-relaxed">{x.message}</p> : null}
+                      <p className="mt-3 font-mono-tech text-[10px] text-zinc-400">{new Date(x.created_at).toLocaleString()}</p>
+                    </div>
+                    <button data-testid={`admin-application-delete-${x.id}`} onClick={() => deleteApplication(x.id)} className="self-start inline-flex items-center gap-2 px-4 py-2 font-mono-tech text-[11px] uppercase tracking-widest border border-black/15 text-red-500 hover:border-red-500 transition-colors">
                       <Trash2 size={12} /> Delete
                     </button>
                   </div>

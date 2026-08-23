@@ -8,6 +8,7 @@ import { GrainOverlay } from "@/components/GrainOverlay";
 import Landing from "@/pages/Landing";
 import Quote from "@/pages/Quote";
 import Contact from "@/pages/Contact";
+import Careers from "@/pages/Careers";
 import Admin from "@/pages/Admin";
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
               <Route path="/" element={<Landing />} />
               <Route path="/quote" element={<Quote />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/careers" element={<Careers />} />
               <Route path="/admin" element={<Admin />} />
             </Routes>
           </BrowserRouter>

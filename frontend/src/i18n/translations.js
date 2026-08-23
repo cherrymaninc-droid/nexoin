@@ -1,7 +1,7 @@
 export const translations = {
   en: {
     code: "EN",
-    nav: { services: "Services", manifesto: "Approach", network: "Focus", contact: "Contact", quote: "Request a quote" },
+    nav: { services: "Services", manifesto: "Approach", network: "Focus", careers: "Careers", contact: "Contact", quote: "Request a quote" },
     hero: {
       tag: "NEXOIN B2B TRANSPORT",
       line1: "Reliable road",
@@ -81,7 +81,7 @@ export const translations = {
   },
   fr: {
     code: "FR",
-    nav: { services: "Services", manifesto: "Approche", network: "Focus", contact: "Contact", quote: "Demander un devis" },
+    nav: { services: "Services", manifesto: "Approche", network: "Focus", careers: "Carrières", contact: "Contact", quote: "Demander un devis" },
     hero: {
       tag: "NEXOIN B2B TRANSPORT",
       line1: "Transport routier",
@@ -161,7 +161,7 @@ export const translations = {
   },
   de: {
     code: "DE",
-    nav: { services: "Leistungen", manifesto: "Ansatz", network: "Fokus", contact: "Kontakt", quote: "Angebot anfordern" },
+    nav: { services: "Leistungen", manifesto: "Ansatz", network: "Fokus", careers: "Karriere", contact: "Kontakt", quote: "Angebot anfordern" },
     hero: {
       tag: "NEXOIN B2B TRANSPORT",
       line1: "Zuverlässiger",
