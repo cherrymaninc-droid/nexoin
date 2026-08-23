@@ -1,0 +1,134 @@
+{
+  "brand": {
+    "name": "NEXOIN",
+    "descriptor": "NEXOIN B2B TRANSPORT",
+    "personality": "Modern, Reliable, Professional, Precise, Efficient, International, Technology-oriented, Premium, Minimalist",
+    "logo_strategy": "Typographic and minimalist, utilizing the brand font (Cabinet Grotesk). No generic trucks, roads, or delivery box icons."
+  },
+  "theme": {
+    "mode": "dark",
+    "rationale": "A dark theme elevates the brand to a premium, technology-oriented 'Awwwards' level, contrasting sharply with traditional white/blue local trucking company websites."
+  },
+  "colors": {
+    "archetype": "Luxury Technical & High-Contrast",
+    "palette": {
+      "base_bg": "#070707",
+      "surface": "#121212",
+      "surface_elevated": "#1A1A1A",
+      "text_primary": "#FFFFFF",
+      "text_secondary": "#A1A1AA",
+      "border": "rgba(255, 255, 255, 0.1)",
+      "primary_accent": "#0044FF",
+      "primary_accent_hover": "#0038D1",
+      "danger_error": "#FF3B30",
+      "success": "#00C566"
+    },
+    "rules": [
+      "Never use pure black #000000; stick to #070707 for depth.",
+      "Gradients should be extremely subtle or non-existent; rely on solid deep colors and 1px borders.",
+      "Accent color (#0044FF) is used strictly for critical interactions, data highlights, and the quote CTA."
+    ]
+  },
+  "typography": {
+    "fonts": {
+      "headings": {
+        "family": "Cabinet Grotesk, sans-serif",
+        "weights": ["300", "400", "800", "900"],
+        "usage": "Hero typography, section headers, massive brand reveals."
+      },
+      "body": {
+        "family": "Manrope, sans-serif",
+        "weights": ["400", "500"],
+        "usage": "Paragraphs, descriptions, form inputs."
+      },
+      "mono_accent": {
+        "family": "JetBrains Mono, monospace",
+        "weights": ["400"],
+        "usage": "Manifesto chapter numbers (e.g., 01, 02), metadata, small labels, button micro-copy."
+      }
+    },
+    "rules": [
+      "H1 MAX size: text-6xl md:text-8xl (exception for the 'NEXOIN' hero loader which can be massive but scaled via viewport vw).",
+      "All massive headings MUST have tracking-tighter.",
+      "Never use Inter for headings.",
+      "Use JetBrains Mono for technical precision to establish the 'tech-startup' vibe."
+    ]
+  },
+  "layouts": {
+    "spacing": "Generous spacing. Use py-24 or py-32 for section padding.",
+    "grid_system": "Asymmetrical Bento and Swiss Grid mix. Do not center everything. Use 12-column grid to offset text blocks from images.",
+    "image_treatment": "Clipped frames. Images must not span 100% width edge-to-edge unless it's a specific parallax moment. Encase images in strict rectangular masks with 1px borders.",
+    "sections": {
+      "hero": "Kinetic typographic hero. 'NEXOIN' text massive, masked line-by-line reveal. Subtitle 'B2B TRANSPORT' in JetBrains Mono.",
+      "manifesto": "Numbered chapters. Huge numbers '01', '02' in JetBrains Mono with Cabinet Grotesk headings. Stark layout.",
+      "marquee": "Slow editorial marquee. Use Cabinet Grotesk font-light, text-4xl. Separators could be simple solid circles.",
+      "services": "Interactive accordion or hover-reveal grid. Minimal text until hovered.",
+      "quote_devis": "Dedicated page. Split screen: Left side sticky with massive typography 'REQUEST CAPACITY', Right side scrolling form."
+    }
+  },
+  "motion": {
+    "libraries": ["framer-motion", "lenis"],
+    "scroll": "Lenis for smooth momentum scrolling. Mandatory for premium feel.",
+    "animations": [
+      "On-load: Masked line-by-line text reveal for NEXOIN using framer-motion (initial y: 100%, animate y: 0 within overflow-hidden spans).",
+      "Scroll reveals: Subtle translateY (20px) and opacity fade-in for section content.",
+      "Image parallax: Wrap images in a motion.div that translates slightly on the Y-axis based on scroll position.",
+      "Hover: Button text shifting up (staggered character animation) or simple clean scale."
+    ]
+  },
+  "visual_enhancers": {
+    "texture": "Subtle grain overlay (pointer-events-none, opacity-20) across the entire app to remove digital flatness.",
+    "borders": "Expose the grid. Use border-collapse style layouts with 1px border-white/10 to create a technical blueprint feel.",
+    "glassmorphism": "Used ONLY for the sticky top navigation: backdrop-blur-xl bg-[#070707]/60 border-b border-white/10."
+  },
+  "components": {
+    "instructions_to_main_agent": "Use bare HTML/Tailwind for the landing page layout to ensure maximum creative freedom. Use Shadcn ONLY for the interactive Quote/Devis form (Inputs, Select, Textarea, Button).",
+    "buttons": "Sharp corners (rounded-none). No pills. Button should look technical. Dark background with white text, or accent blue background. Include an arrow icon.",
+    "navigation": "Sticky, transparent with backdrop-blur. Include language switcher (FR / DE / EN). 'NEXOIN' brand text on the left, Quote CTA on the right.",
+    "footer": "Massive 'NEXOIN' text. Strict grid for links. Newsletter/contact form."
+  },
+  "accessibility": {
+    "contrast": "Ensure text over the dark background meets 4.5:1 ratio. Gray text must not be too dark (use text-zinc-400 minimum).",
+    "motion": "Respect prefers-reduced-motion media query for all framer-motion animations.",
+    "testing": "All interactive elements MUST have data-testid attributes (e.g., data-testid='quote-submit-btn')."
+  },
+  "3d_libraries": {
+    "usage": "Minimalist",
+    "recommendation": "Use framer-motion for smooth 2D/parallax reveals rather than a heavy WebGL canvas, but if 3D is strictly desired for the 'network/coverage' section, use react-globe.gl with a transparent background and monochrome blue/white dots to map European transport routes."
+  },
+  "images": {
+    "style": "High contrast, desaturated, or deliberately color-graded to feel cinematic and technical. Spotlight lighting.",
+    "urls": [
+      {
+        "category": "hero_parallax",
+        "url": "https://images.pexels.com/photos/27508769/pexels-photo-27508769.jpeg",
+        "description": "Modern semi truck. Needs to be heavily filtered/darkened via CSS to fit the dark theme."
+      },
+      {
+        "category": "services_logistics",
+        "url": "https://images.unsplash.com/photo-1590497008432-598f04441de8",
+        "description": "Busy shipping port under dark sky. Fits the moody, premium vibe."
+      },
+      {
+        "category": "services_warehouse",
+        "url": "https://images.pexels.com/photos/36398150/pexels-photo-36398150.jpeg",
+        "description": "Forklift in warehouse. Industrial distribution setting."
+      },
+      {
+        "category": "network_highway",
+        "url": "https://images.pexels.com/photos/33707847/pexels-photo-33707847.jpeg",
+        "description": "European highway infrastructure."
+      }
+    ]
+  },
+  "universal_guidelines": [
+    "Do not use centered generic layouts. Embrace asymmetry and negative space.",
+    "NEVER translate or alter the 'NEXOIN' brand name.",
+    "Layer elements to create depth (z-index hierarchy).",
+    "No generic AI emojis.",
+    "Include a dedicated language switcher for FR, DE, EN.",
+    "Ensure all interactive elements have micro-animations (hover, focus, active).",
+    "Provide raw JSON configurations and standard generic tailwind structures.",
+    "Do not use HTML-based native components for forms; rely on customized Shadcn."
+  ]
+}
