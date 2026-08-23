@@ -5,14 +5,14 @@ export const translations = {
     hero: {
       tag: "NEXOIN B2B TRANSPORT",
       line1: "Reliable road",
-      line2: "freight between",
-      line3: "France & Germany.",
+      line2: "freight across",
+      line3: "Europe.",
       intro:
-        "NEXOIN is a new B2B transport company. We focus on regular routes, cross-border France–Germany transport, express deliveries and subcontracting — and we are looking to build long-term partnerships with logistics companies, freight forwarders and manufacturers.",
+        "NEXOIN is a new B2B transport company. We focus on regular routes, cross-border European transport, express deliveries and subcontracting — and we are looking to build long-term partnerships with logistics companies, freight forwarders and manufacturers across Europe.",
       cta: "Request a quote",
       scroll: "Scroll to explore",
     },
-    marquee: ["Regular routes", "Cross-border FR–DE", "Express transport", "Groupage", "B2B distribution", "Subcontracting"],
+    marquee: ["Regular routes", "Cross-border Europe", "Express transport", "Groupage", "B2B distribution", "Subcontracting"],
     pillars: [
       { title: "Availability", text: "Reachable and responsive whenever you need transport capacity." },
       { title: "Flexibility", text: "Regular routes or one-off loads, adapted to your needs." },
@@ -24,7 +24,7 @@ export const translations = {
       title: "Built for regular B2B transport.",
       items: [
         { n: "01", title: "Regular routes & B2B distribution", desc: "Dependable scheduled transport for businesses that need capacity they can plan around." },
-        { n: "02", title: "Cross-border France–Germany", desc: "Our core focus: reliable road freight across the French–German border, including the Saarland region." },
+        { n: "02", title: "Cross-border European transport", desc: "Reliable road freight across European borders — including France, Germany and neighbouring markets." },
         { n: "03", title: "Express & time-critical", desc: "Direct and urgent transport when a delivery cannot wait, with clear communication throughout." },
         { n: "04", title: "Subcontracting & capacity", desc: "Additional transport capacity for logistics companies and freight forwarders that need a dependable partner." },
       ],
@@ -34,16 +34,16 @@ export const translations = {
       title: "How we work.",
       chapters: [
         { n: "01", title: "A reliable partner", desc: "We are building NEXOIN as a dependable transport partner. We commit to what we can deliver, and we communicate openly." },
-        { n: "02", title: "Cross-border focus", desc: "Our focus is the France–Germany corridor and regular routes. Borders are part of the routine, not an obstacle." },
+        { n: "02", title: "European reach", desc: "Our focus is reliable cross-border road transport across Europe, with regular routes at the core. Borders are part of the routine, not an obstacle." },
         { n: "03", title: "Direct communication", desc: "One reachable contact who answers quickly and keeps you informed at every stage of the transport." },
         { n: "04", title: "Built to grow with you", desc: "We are a young company looking to build long-term partnerships and grow alongside the businesses we work with." },
       ],
     },
     network: {
       tag: "03 — Focus",
-      title: "Focused on the France–Germany corridor.",
-      desc: "We are building reliable cross-border capacity between France and Germany, with a base in the Saarland region — and we adapt to new routes as partnerships develop.",
-      hubs: ["Regular routes", "Cross-border FR–DE", "Saarland", "Grand Est", "Express transport", "Subcontracting"],
+      title: "Building reliable European road capacity.",
+      desc: "We are developing dependable cross-border capacity across Europe — with France and Germany among our first markets — and we adapt to new routes as partnerships develop.",
+      hubs: ["Regular routes", "Cross-border Europe", "France", "Germany", "Benelux", "Express transport"],
     },
     footer: {
       cta: "Let's build something reliable.",
@@ -85,14 +85,14 @@ export const translations = {
     hero: {
       tag: "NEXOIN B2B TRANSPORT",
       line1: "Transport routier",
-      line2: "fiable entre",
-      line3: "la France & l'Allemagne.",
+      line2: "fiable à travers",
+      line3: "l'Europe.",
       intro:
-        "NEXOIN est une nouvelle entreprise de transport B2B. Nous nous concentrons sur les lignes régulières, le transport transfrontalier France–Allemagne, les livraisons express et la sous-traitance — et nous souhaitons construire des partenariats durables avec les entreprises de logistique, les transitaires et les industriels.",
+        "NEXOIN est une nouvelle entreprise de transport B2B. Nous nous concentrons sur les lignes régulières, le transport transfrontalier en Europe, les livraisons express et la sous-traitance — et nous souhaitons construire des partenariats durables avec les entreprises de logistique, les transitaires et les industriels partout en Europe.",
       cta: "Demander un devis",
       scroll: "Faites défiler",
     },
-    marquee: ["Lignes régulières", "Transfrontalier FR–DE", "Transport express", "Groupage", "Distribution B2B", "Sous-traitance"],
+    marquee: ["Lignes régulières", "Transfrontalier Europe", "Transport express", "Groupage", "Distribution B2B", "Sous-traitance"],
     pillars: [
       { title: "Disponibilité", text: "Joignables et réactifs dès que vous avez besoin de capacité." },
       { title: "Flexibilité", text: "Lignes régulières ou envois ponctuels, adaptés à vos besoins." },
@@ -104,7 +104,7 @@ export const translations = {
       title: "Pensé pour le transport B2B régulier.",
       items: [
         { n: "01", title: "Lignes régulières & distribution B2B", desc: "Un transport planifié et fiable pour les entreprises qui ont besoin d'une capacité sur laquelle s'organiser." },
-        { n: "02", title: "Transfrontalier France–Allemagne", desc: "Notre cœur de métier : un transport routier fiable de part et d'autre de la frontière franco-allemande, y compris la région de la Sarre." },
+        { n: "02", title: "Transfrontalier européen", desc: "Un transport routier fiable à travers les frontières européennes — dont la France, l'Allemagne et les marchés voisins." },
         { n: "03", title: "Express & temps critique", desc: "Un transport direct et urgent lorsqu'une livraison ne peut pas attendre, avec une communication claire à chaque étape." },
         { n: "04", title: "Sous-traitance & capacité", desc: "Une capacité de transport supplémentaire pour les entreprises de logistique et les transitaires à la recherche d'un partenaire fiable." },
       ],
@@ -114,16 +114,16 @@ export const translations = {
       title: "Notre façon de travailler.",
       chapters: [
         { n: "01", title: "Un partenaire fiable", desc: "Nous construisons NEXOIN comme un partenaire de transport fiable. Nous nous engageons sur ce que nous pouvons livrer et nous communiquons en toute transparence." },
-        { n: "02", title: "Focus transfrontalier", desc: "Notre priorité est le corridor France–Allemagne et les lignes régulières. La frontière fait partie de la routine, pas un obstacle." },
+        { n: "02", title: "Portée européenne", desc: "Notre priorité : un transport routier transfrontalier fiable à travers l'Europe, avec les lignes régulières au cœur. La frontière fait partie de la routine, pas un obstacle." },
         { n: "03", title: "Communication directe", desc: "Un interlocuteur unique et joignable, qui répond vite et vous tient informé à chaque étape du transport." },
         { n: "04", title: "Conçu pour grandir avec vous", desc: "Nous sommes une jeune entreprise qui souhaite bâtir des partenariats durables et grandir aux côtés des entreprises avec lesquelles nous travaillons." },
       ],
     },
     network: {
       tag: "03 — Focus",
-      title: "Concentrés sur le corridor France–Allemagne.",
-      desc: "Nous développons une capacité transfrontalière fiable entre la France et l'Allemagne, avec une base dans la région de la Sarre — et nous nous adaptons à de nouvelles lignes au fil des partenariats.",
-      hubs: ["Lignes régulières", "Transfrontalier FR–DE", "Sarre", "Grand Est", "Transport express", "Sous-traitance"],
+      title: "Une capacité routière fiable en Europe.",
+      desc: "Nous développons une capacité transfrontalière fiable à travers l'Europe — la France et l'Allemagne comptant parmi nos premiers marchés — et nous nous adaptons à de nouvelles lignes au fil des partenariats.",
+      hubs: ["Lignes régulières", "Transfrontalier Europe", "France", "Allemagne", "Benelux", "Transport express"],
     },
     footer: {
       cta: "Construisons une relation fiable.",
@@ -166,13 +166,13 @@ export const translations = {
       tag: "NEXOIN B2B TRANSPORT",
       line1: "Zuverlässiger",
       line2: "Güterverkehr",
-      line3: "Frankreich–Deutschland.",
+      line3: "in ganz Europa.",
       intro:
-        "NEXOIN ist ein neues B2B-Transportunternehmen. Wir konzentrieren uns auf regelmäßige Linienverkehre, den grenzüberschreitenden Verkehr Frankreich–Deutschland, Expresslieferungen und Frachtführerleistungen — und möchten langfristige Partnerschaften mit Speditionen, Logistikunternehmen und Herstellern aufbauen.",
+        "NEXOIN ist ein neues B2B-Transportunternehmen. Wir konzentrieren uns auf regelmäßige Linienverkehre, den grenzüberschreitenden Verkehr in Europa, Expresslieferungen und Frachtführerleistungen — und möchten langfristige Partnerschaften mit Speditionen, Logistikunternehmen und Herstellern in ganz Europa aufbauen.",
       cta: "Angebot anfordern",
       scroll: "Zum Entdecken scrollen",
     },
-    marquee: ["Linienverkehre", "Grenzverkehr FR–DE", "Expresstransport", "Sammelgut", "B2B-Distribution", "Subunternehmer"],
+    marquee: ["Linienverkehre", "Grenzverkehr Europa", "Expresstransport", "Sammelgut", "B2B-Distribution", "Subunternehmer"],
     pillars: [
       { title: "Erreichbarkeit", text: "Erreichbar und reaktionsschnell, wenn Sie Kapazität benötigen." },
       { title: "Flexibilität", text: "Regelmäßige Linien oder Einzelladungen, auf Ihren Bedarf abgestimmt." },
@@ -184,7 +184,7 @@ export const translations = {
       title: "Gemacht für regelmäßigen B2B-Transport.",
       items: [
         { n: "01", title: "Linienverkehre & B2B-Distribution", desc: "Planbarer, zuverlässiger Transport für Unternehmen, die Kapazität brauchen, mit der sie planen können." },
-        { n: "02", title: "Grenzverkehr Frankreich–Deutschland", desc: "Unser Schwerpunkt: zuverlässiger Straßentransport über die deutsch-französische Grenze, einschließlich des Saarlands." },
+        { n: "02", title: "Grenzüberschreitender Verkehr in Europa", desc: "Zuverlässiger Straßentransport über europäische Grenzen — u. a. Frankreich, Deutschland und die Nachbarmärkte." },
         { n: "03", title: "Express & zeitkritisch", desc: "Direkter, dringender Transport, wenn eine Lieferung nicht warten kann — mit klarer Kommunikation." },
         { n: "04", title: "Subunternehmer & Kapazität", desc: "Zusätzliche Transportkapazität für Speditionen und Logistikunternehmen, die einen verlässlichen Partner suchen." },
       ],
@@ -194,16 +194,16 @@ export const translations = {
       title: "Wie wir arbeiten.",
       chapters: [
         { n: "01", title: "Ein verlässlicher Partner", desc: "Wir bauen NEXOIN als verlässlichen Transportpartner auf. Wir sagen zu, was wir leisten können, und kommunizieren offen." },
-        { n: "02", title: "Grenzüberschreitender Fokus", desc: "Unser Fokus liegt auf dem Korridor Frankreich–Deutschland und regelmäßigen Linien. Die Grenze gehört zur Routine, nicht zum Hindernis." },
+        { n: "02", title: "Europäische Reichweite", desc: "Unser Fokus: zuverlässiger grenzüberschreitender Straßentransport in Europa, mit regelmäßigen Linien im Kern. Die Grenze gehört zur Routine, nicht zum Hindernis." },
         { n: "03", title: "Direkte Kommunikation", desc: "Ein erreichbarer Ansprechpartner, der schnell antwortet und Sie in jeder Phase des Transports auf dem Laufenden hält." },
         { n: "04", title: "Gemacht, um mit Ihnen zu wachsen", desc: "Wir sind ein junges Unternehmen, das langfristige Partnerschaften aufbauen und gemeinsam mit seinen Kunden wachsen möchte." },
       ],
     },
     network: {
       tag: "03 — Fokus",
-      title: "Fokus auf den Korridor Frankreich–Deutschland.",
-      desc: "Wir bauen zuverlässige grenzüberschreitende Kapazität zwischen Frankreich und Deutschland auf, mit einer Basis im Saarland — und passen uns neuen Strecken an, sobald Partnerschaften entstehen.",
-      hubs: ["Linienverkehre", "Grenzverkehr FR–DE", "Saarland", "Grand Est", "Expresstransport", "Subunternehmer"],
+      title: "Zuverlässige Straßenkapazität in Europa.",
+      desc: "Wir bauen verlässliche grenzüberschreitende Kapazität in ganz Europa auf — Frankreich und Deutschland gehören zu unseren ersten Märkten — und passen uns neuen Strecken an, sobald Partnerschaften entstehen.",
+      hubs: ["Linienverkehre", "Grenzverkehr Europa", "Frankreich", "Deutschland", "Benelux", "Expresstransport"],
     },
     footer: {
       cta: "Lassen Sie uns etwas Verlässliches aufbauen.",

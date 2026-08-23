@@ -12,10 +12,10 @@ import { useLanguage } from "@/context/LanguageContext";
 import { scrollToId } from "@/hooks/useSmoothScroll";
 
 const IMAGES = {
-  hero: "https://images.unsplash.com/photo-1485575301924-6891ef935dcd?crop=entropy&cs=srgb&fm=jpg&q=85&w=1800",
-  truck: "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
-  van: "https://images.unsplash.com/photo-1684055733361-1fc36972a93d?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
-  highway: "https://images.unsplash.com/photo-1591419478162-a4dd21b7ec0a?crop=entropy&cs=srgb&fm=jpg&q=85&w=1600",
+  hero: "https://images.unsplash.com/photo-1571989928541-674d0cf46c4a?crop=entropy&cs=srgb&fm=jpg&q=85&w=1800",
+  truck: "https://images.pexels.com/photos/1267325/pexels-photo-1267325.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=1200",
+  van: "https://images.pexels.com/photos/19871521/pexels-photo-19871521.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=1200",
+  highway: "https://images.pexels.com/photos/27732803/pexels-photo-27732803.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=1600",
 };
 
 const Pillars = () => {

@@ -50,7 +50,7 @@ export const Network = ({ networkImg }) => {
             />
             <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-transparent to-[#0044ff]/20" />
             <div className="absolute top-6 left-6 font-mono-tech text-[11px] uppercase tracking-widest text-white/80">
-              France &#8644; Germany
+              European road freight
             </div>
             <div className="absolute bottom-6 right-6 font-display font-extrabold text-3xl text-white">
               NEXOIN<span className="text-[#0044ff]">.</span>
