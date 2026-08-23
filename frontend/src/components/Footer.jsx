@@ -8,7 +8,7 @@ export const Footer = () => {
   const year = new Date().getFullYear();
 
   return (
-    <footer id="contact" data-testid="footer" className="relative bg-[#070707] border-t border-white/10">
+    <footer id="contact" data-testid="footer" className="relative bg-[#0a0a0a] text-white border-t border-black/10">
       {/* CTA band */}
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-20 md:py-28 border-b border-white/10">
         <div className="grid md:grid-cols-12 gap-10 items-end">

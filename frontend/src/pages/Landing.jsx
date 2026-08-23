@@ -13,18 +13,18 @@ import { useLanguage } from "@/context/LanguageContext";
 const IMAGES = {
   hero: "https://images.pexels.com/photos/27508769/pexels-photo-27508769.jpeg",
   port: "https://images.unsplash.com/photo-1590497008432-598f04441de8",
-  warehouse: "https://images.pexels.com/photos/36398150/pexels-photo-36398150.jpeg",
+  warehouse: "https://images.pexels.com/photos/2348359/pexels-photo-2348359.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=900",
   highway: "https://images.pexels.com/photos/33707847/pexels-photo-33707847.jpeg",
 };
 
 const Stats = () => {
   const { t } = useLanguage();
   return (
-    <section data-testid="stats-strip" className="bg-[#070707] border-b border-white/10">
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 grid grid-cols-2 md:grid-cols-4 divide-x divide-white/10 border-x border-white/10">
+    <section data-testid="stats-strip" className="bg-white border-b border-black/10">
+      <div className="max-w-[1400px] mx-auto px-6 md:px-10 grid grid-cols-2 md:grid-cols-4 divide-x divide-black/10 border-x border-black/10">
         {t.stats.map((s, i) => (
           <Reveal key={i} i={i} className="py-10 md:py-14 px-6 text-center md:text-left">
-            <div className="font-display font-extrabold tracking-tighter text-4xl md:text-6xl text-white">{s.value}</div>
+            <div className="font-display font-extrabold tracking-tighter text-4xl md:text-6xl text-[#0a0a0a]">{s.value}</div>
             <div className="mt-2 font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500">{s.label}</div>
           </Reveal>
         ))}
@@ -46,7 +46,7 @@ export default function Landing() {
   }, [hash]);
 
   return (
-    <div className="bg-[#070707]">
+    <div className="bg-[#f4f3ef]">
       <Navbar />
       <main>
         <Hero heroImg={IMAGES.hero} />

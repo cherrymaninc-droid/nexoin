@@ -23,8 +23,18 @@ Build the official website for **NEXOIN**, a modern European B2B transport & log
 - Backend: quote create + list via curl (2 records persisted).
 - Frontend: hero/services/manifesto/network/footer render; quote form filled + submitted successfully; language switch EN↔FR↔DE works. No console errors.
 
+## Implemented (2026-08-23, iteration 2)
+- **Light theme**: entire site converted from dark to a warm light theme (#f4f3ef paper, #0a0a0a text, #0044ff accent, dark marquee + footer as intentional contrast bands).
+- **Admin console** at `/admin` (open URL, no auth per user choice): lists all quotes, search, status filter tabs (all/new/contacted/closed), and per-quote status update (PATCH /api/quotes/{id}).
+- **Email alerts**: on new quote, backend sends an internal notification via Emergent-managed Resend (`send_email` + guardrail gate). Send verified working with test recipient; wrapped in try/except so quote save never breaks.
+- **Startup repositioning**: removed Warehousing service; services now FTL / Groupage & LTL / Time-Critical / Cross-Border Network (asset-light carrier network). Stats reframed to startup-appropriate (<2h quote, 24/7 tracking, 100% vetted carriers, 1 dedicated contact). Manifesto/network copy de-emphasise owned facilities. All 3 languages updated.
+
+## Known Pending
+- OWNER_EMAIL is a placeholder (`ops@nexoin.eu`, undeliverable domain → send returns 422). Needs the user's REAL notification email in backend/.env for alerts to actually deliver.
+- `/admin` is unprotected (open URL) per user choice.
+
 ## Backlog
-- P1: Real email notification on new quote (Resend) — currently DB-only, no email sent.
-- P1: Admin view to browse submitted quotes.
-- P2: Interactive European route map / globe in Network section.
+- P1: Set real OWNER_EMAIL so alerts deliver.
+- P2: Optional password protection for /admin.
+- P2: Interactive European route map in Network section.
 - P2: Cookie/consent + legal page content.

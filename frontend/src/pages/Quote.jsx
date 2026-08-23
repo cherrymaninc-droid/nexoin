@@ -33,7 +33,7 @@ const empty = {
 };
 
 const fieldCls =
-  "bg-transparent border-0 border-b border-white/15 rounded-none px-0 h-12 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-[#0044ff] transition-colors";
+  "bg-transparent border-0 border-b border-black/15 rounded-none px-0 h-12 text-[#0a0a0a] placeholder:text-zinc-400 focus-visible:ring-0 focus-visible:border-[#0044ff] transition-colors";
 
 export default function Quote() {
   const { t, lang, setLang, langs } = useLanguage();
@@ -67,9 +67,9 @@ export default function Quote() {
   const F = t.quote.fields;
 
   return (
-    <div className="min-h-screen bg-[#070707] text-white">
+    <div className="min-h-screen bg-[#f4f3ef] text-[#0a0a0a]">
       {/* Minimal top bar */}
-      <header className="fixed top-0 inset-x-0 z-50 bg-[#070707]/70 backdrop-blur-xl border-b border-white/10">
+      <header className="fixed top-0 inset-x-0 z-50 bg-[#f4f3ef]/80 backdrop-blur-xl border-b border-black/10">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 h-20 flex items-center justify-between">
           <Link to="/" data-testid="quote-logo" className="text-2xl">
             <Wordmark />
@@ -81,7 +81,7 @@ export default function Quote() {
                   key={l}
                   data-testid={`quote-lang-${l}`}
                   onClick={() => setLang(l)}
-                  className={`px-1.5 py-1 uppercase transition-colors ${lang === l ? "text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+                  className={`px-1.5 py-1 uppercase transition-colors ${lang === l ? "text-[#0a0a0a]" : "text-zinc-400 hover:text-zinc-700"}`}
                 >
                   {l}
                 </button>
@@ -90,7 +90,7 @@ export default function Quote() {
             <Link
               to="/"
               data-testid="quote-back"
-              className="inline-flex items-center gap-2 font-mono-tech text-xs uppercase tracking-widest text-zinc-400 hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 font-mono-tech text-xs uppercase tracking-widest text-zinc-600 hover:text-[#0a0a0a] transition-colors"
             >
               <ArrowLeft size={14} /> {t.quote.back}
             </Link>
@@ -106,7 +106,7 @@ export default function Quote() {
             <h1 className="mt-6 font-display font-extrabold tracking-tighter text-5xl md:text-7xl leading-[0.92]">
               {t.quote.title}
             </h1>
-            <p className="mt-8 text-zinc-400 text-base md:text-lg leading-relaxed max-w-md">{t.quote.desc}</p>
+            <p className="mt-8 text-zinc-600 text-base md:text-lg leading-relaxed max-w-md">{t.quote.desc}</p>
             <div className="mt-10 font-mono-tech text-sm text-zinc-500">
               ops@nexoin.eu · +32 10 000 000
             </div>
@@ -114,7 +114,7 @@ export default function Quote() {
         </div>
 
         {/* Form */}
-        <div className="lg:col-span-7 px-6 md:px-10 pt-8 lg:pt-40 pb-24 lg:border-l border-white/10">
+        <div className="lg:col-span-7 px-6 md:px-10 pt-8 lg:pt-40 pb-24 lg:border-l border-black/10">
           {done ? (
             <motion.div
               data-testid="quote-success"
@@ -122,7 +122,7 @@ export default function Quote() {
               animate={{ opacity: 1, y: 0 }}
               className="min-h-[40vh] flex flex-col items-start justify-center gap-6"
             >
-              <div className="h-16 w-16 bg-[#0044ff] flex items-center justify-center">
+              <div className="h-16 w-16 bg-[#0044ff] text-white flex items-center justify-center">
                 <Check size={28} />
               </div>
               <p className="font-display font-bold text-3xl md:text-4xl max-w-md leading-tight">{t.quote.success}</p>
@@ -152,7 +152,7 @@ export default function Quote() {
                   <SelectTrigger data-testid="q-cargo" className={fieldCls}>
                     <SelectValue placeholder="—" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#121212] border-white/10 text-white">
+                  <SelectContent className="bg-white border-black/10 text-[#0a0a0a]">
                     {t.quote.cargoOptions.map((o) => (
                       <SelectItem key={o} value={o} className="focus:bg-[#0044ff] focus:text-white">
                         {o}
@@ -169,7 +169,7 @@ export default function Quote() {
                   <SelectTrigger data-testid="q-frequency" className={fieldCls}>
                     <SelectValue placeholder="—" />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#121212] border-white/10 text-white">
+                  <SelectContent className="bg-white border-black/10 text-[#0a0a0a]">
                     {t.quote.freqOptions.map((o) => (
                       <SelectItem key={o} value={o} className="focus:bg-[#0044ff] focus:text-white">
                         {o}
@@ -185,7 +185,7 @@ export default function Quote() {
                     rows={4}
                     value={form.message}
                     onChange={set("message")}
-                    className="bg-transparent border-0 border-b border-white/15 rounded-none px-0 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-[#0044ff] resize-none"
+                    className="bg-transparent border-0 border-b border-black/15 rounded-none px-0 text-[#0a0a0a] placeholder:text-zinc-400 focus-visible:ring-0 focus-visible:border-[#0044ff] resize-none"
                   />
                 </Field>
               </div>
@@ -195,7 +195,7 @@ export default function Quote() {
                   type="submit"
                   data-testid="quote-submit-btn"
                   disabled={loading}
-                  className="group inline-flex items-center gap-3 bg-[#0044ff] text-white px-8 py-4 font-mono-tech text-xs uppercase tracking-widest hover:bg-white hover:text-black transition-colors duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="group inline-flex items-center gap-3 bg-[#0044ff] text-white px-8 py-4 font-mono-tech text-xs uppercase tracking-widest hover:bg-[#0a0a0a] transition-colors duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {loading ? t.quote.submitting : t.quote.submit}
                   <ArrowUpRight size={16} className="transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1" />

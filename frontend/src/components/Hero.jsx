@@ -19,7 +19,7 @@ const Line = ({ children, i, accent }) => (
       variants={lineReveal}
       initial="hidden"
       animate="visible"
-      className={`block ${accent ? "text-[#0044ff]" : "text-white"}`}
+      className={`block ${accent ? "text-[#0044ff]" : "text-[#0a0a0a]"}`}
     >
       {children}
     </motion.span>
@@ -34,16 +34,16 @@ export const Hero = ({ heroImg }) => {
   const overlayY = useTransform(scrollYProgress, [0, 1], ["0%", "-12%"]);
 
   return (
-    <section ref={ref} data-testid="hero-section" className="relative min-h-screen w-full overflow-hidden">
+    <section ref={ref} data-testid="hero-section" className="relative min-h-screen w-full overflow-hidden bg-[#f4f3ef]">
       {/* Parallax background image */}
       <motion.div style={{ y: imgY }} className="absolute inset-0 -z-10 scale-110">
         <img
           src={heroImg}
           alt=""
-          className="h-full w-full object-cover object-center opacity-40 grayscale contrast-125"
+          className="h-full w-full object-cover object-center opacity-25 grayscale contrast-110"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#070707]/70 via-[#070707]/60 to-[#070707]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#070707] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#f4f3ef]/50 via-[#f4f3ef]/70 to-[#f4f3ef]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#f4f3ef] via-[#f4f3ef]/20 to-transparent" />
       </motion.div>
 
       <motion.div
@@ -56,7 +56,7 @@ export const Hero = ({ heroImg }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.15 }}
             data-testid="hero-tag"
-            className="font-mono-tech text-xs md:text-sm uppercase tracking-[0.35em] text-zinc-400 flex items-center gap-3"
+            className="font-mono-tech text-xs md:text-sm uppercase tracking-[0.35em] text-zinc-600 flex items-center gap-3"
           >
             <span className="inline-block h-1.5 w-1.5 bg-[#0044ff]" />
             {t.hero.tag}
@@ -77,7 +77,7 @@ export const Hero = ({ heroImg }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.9 }}
             data-testid="hero-intro"
-            className="md:col-span-6 lg:col-span-5 text-zinc-300 text-base md:text-lg leading-relaxed"
+            className="md:col-span-6 lg:col-span-5 text-zinc-700 text-base md:text-lg leading-relaxed"
           >
             {t.hero.intro}
           </motion.p>
@@ -91,7 +91,7 @@ export const Hero = ({ heroImg }) => {
             <Link
               to="/quote"
               data-testid="hero-cta"
-              className="group inline-flex items-center gap-3 bg-[#0044ff] text-white px-8 py-4 font-mono-tech text-xs uppercase tracking-widest hover:bg-white hover:text-black transition-colors duration-300"
+              className="group inline-flex items-center gap-3 bg-[#0044ff] text-white px-8 py-4 font-mono-tech text-xs uppercase tracking-widest hover:bg-[#0a0a0a] transition-colors duration-300"
             >
               {t.hero.cta}
               <ArrowUpRight size={16} className="transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1" />

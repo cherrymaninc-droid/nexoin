@@ -4,7 +4,7 @@ export const Marquee = () => {
   const { t } = useLanguage();
   const items = [...t.marquee, ...t.marquee];
   return (
-    <section data-testid="marquee" className="border-y border-white/10 bg-[#070707] py-8 overflow-hidden">
+    <section data-testid="marquee" className="border-y border-black/10 bg-[#0a0a0a] py-8 overflow-hidden">
       <div className="nx-marquee-track">
         {[0, 1].map((dup) => (
           <div key={dup} className="flex items-center">
