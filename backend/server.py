@@ -173,7 +173,7 @@ _CONFIRM_COPY = {
     "en": {
         "subject": "We've received your NEXOIN quote request",
         "hi": "Hi",
-        "body": "Thanks for reaching out to NEXOIN. Our routing desk has received your request and will reply with a binding quote within 2 hours.",
+        "body": "Thanks for reaching out to NEXOIN. We've received your request and will get back to you with a tailored quote as soon as possible.",
         "route": "Route",
         "cargo": "Cargo",
         "foot": "Sent by NEXOIN B2B Transport. We never ask for passwords or payment details by email.",
@@ -181,7 +181,7 @@ _CONFIRM_COPY = {
     "fr": {
         "subject": "Nous avons bien recu votre demande de devis NEXOIN",
         "hi": "Bonjour",
-        "body": "Merci d'avoir contacte NEXOIN. Notre cellule de routage a bien recu votre demande et vous repondra avec un devis ferme sous 2 heures.",
+        "body": "Merci d'avoir contacte NEXOIN. Nous avons bien recu votre demande et reviendrons vers vous avec un devis adapte dans les meilleurs delais.",
         "route": "Trajet",
         "cargo": "Marchandise",
         "foot": "Envoye par NEXOIN B2B Transport. Nous ne demandons jamais de mot de passe ou de coordonnees bancaires par e-mail.",
@@ -189,7 +189,7 @@ _CONFIRM_COPY = {
     "de": {
         "subject": "Wir haben Ihre NEXOIN-Angebotsanfrage erhalten",
         "hi": "Hallo",
-        "body": "Danke fuer Ihre Anfrage bei NEXOIN. Unser Routing-Team hat Ihre Anfrage erhalten und meldet sich innerhalb von 2 Stunden mit einem verbindlichen Angebot.",
+        "body": "Danke fuer Ihre Anfrage bei NEXOIN. Wir haben Ihre Anfrage erhalten und melden uns schnellstmoeglich mit einem passenden Angebot.",
         "route": "Strecke",
         "cargo": "Fracht",
         "foot": "Gesendet von NEXOIN B2B Transport. Wir fragen niemals per E-Mail nach Passwoertern oder Zahlungsdaten.",
