@@ -49,18 +49,18 @@ export const Footer = () => {
         <div className="md:col-span-2">
           <h4 className="font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500 mb-4">{t.footer.cols.company}</h4>
           <ul className="space-y-3 text-zinc-300 text-sm">
-            <li><a href="#services" className="hover:text-white transition-colors">{t.footer.links.about}</a></li>
-            <li><a href="#network" className="hover:text-white transition-colors">{t.footer.links.careers}</a></li>
-            <li><a href="#manifesto" className="hover:text-white transition-colors">{t.footer.links.press}</a></li>
+            <li><Link to="/company" className="hover:text-white transition-colors">{t.footer.links.about}</Link></li>
+            <li><Link to="/careers" className="hover:text-white transition-colors">{t.footer.links.careers}</Link></li>
+            <li><Link to="/contact" className="hover:text-white transition-colors">{t.footer.links.press}</Link></li>
           </ul>
         </div>
 
         <div className="md:col-span-2">
           <h4 className="font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500 mb-4">{t.footer.cols.legal}</h4>
           <ul className="space-y-3 text-zinc-300 text-sm">
-            <li><a href="#" className="hover:text-white transition-colors">{t.footer.links.terms}</a></li>
-            <li><a href="#" className="hover:text-white transition-colors">{t.footer.links.privacy}</a></li>
-            <li><a href="#" className="hover:text-white transition-colors">{t.footer.links.imprint}</a></li>
+            <li><Link to="/terms" className="hover:text-white transition-colors">{t.footer.links.terms}</Link></li>
+            <li><Link to="/privacy" className="hover:text-white transition-colors">{t.footer.links.privacy}</Link></li>
+            <li><Link to="/imprint" className="hover:text-white transition-colors">{t.footer.links.imprint}</Link></li>
           </ul>
         </div>
 

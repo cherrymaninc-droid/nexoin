@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,7 +6,9 @@ import os
 import re
 import ipaddress
 import logging
+import hmac
 import httpx
+import jwt
 from html import escape
 from html.parser import HTMLParser
 from urllib.parse import urlparse
@@ -14,7 +16,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import List, Optional
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 
 ROOT_DIR = Path(__file__).parent
@@ -244,6 +246,34 @@ def _contact_email_html(contact: "Contact") -> str:
     )
 
 
+# ---- Admin auth (single shared password) ----------------------------------
+JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+JWT_ALGORITHM = "HS256"
+
+
+def create_admin_token() -> str:
+    payload = {"role": "admin", "exp": datetime.now(timezone.utc) + timedelta(days=7)}
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+
+async def require_admin(authorization: str = Header(default="")):
+    token = authorization[7:] if authorization.startswith("Bearer ") else None
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    if payload.get("role") != "admin":
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return True
+
+
+class AdminLogin(BaseModel):
+    password: str
+
+
 # ---- Models ---------------------------------------------------------------
 class StatusCheck(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -348,6 +378,13 @@ async def root():
     return {"message": "NEXOIN API - operational"}
 
 
+@api_router.post("/admin/login")
+async def admin_login(payload: AdminLogin):
+    if not ADMIN_PASSWORD or not hmac.compare_digest(payload.password, ADMIN_PASSWORD):
+        raise HTTPException(status_code=401, detail="Invalid password")
+    return {"token": create_admin_token()}
+
+
 @api_router.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
     status_obj = StatusCheck(**input.model_dump())
@@ -395,13 +432,13 @@ async def create_quote(payload: QuoteCreate):
 
 
 @api_router.get("/quotes", response_model=List[Quote])
-async def list_quotes():
+async def list_quotes(_admin: bool = Depends(require_admin)):
     quotes = await db.quotes.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return [Quote(**q) for q in quotes]
 
 
 @api_router.patch("/quotes/{quote_id}", response_model=Quote)
-async def update_quote_status(quote_id: str, payload: QuoteStatusUpdate):
+async def update_quote_status(quote_id: str, payload: QuoteStatusUpdate, _admin: bool = Depends(require_admin)):
     if payload.status not in ALLOWED_STATUSES:
         raise HTTPException(status_code=400, detail="Invalid status")
     result = await db.quotes.find_one_and_update(
@@ -416,7 +453,7 @@ async def update_quote_status(quote_id: str, payload: QuoteStatusUpdate):
 
 
 @api_router.put("/quotes/{quote_id}", response_model=Quote)
-async def edit_quote(quote_id: str, payload: QuoteEdit):
+async def edit_quote(quote_id: str, payload: QuoteEdit, _admin: bool = Depends(require_admin)):
     if payload.status not in ALLOWED_STATUSES:
         raise HTTPException(status_code=400, detail="Invalid status")
     existing = await db.quotes.find_one({"id": quote_id}, {"_id": 0})
@@ -428,7 +465,7 @@ async def edit_quote(quote_id: str, payload: QuoteEdit):
 
 
 @api_router.delete("/quotes/{quote_id}")
-async def delete_quote(quote_id: str):
+async def delete_quote(quote_id: str, _admin: bool = Depends(require_admin)):
     res = await db.quotes.delete_one({"id": quote_id})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Quote not found")
@@ -441,7 +478,7 @@ async def read_settings():
 
 
 @api_router.put("/settings", response_model=Settings)
-async def update_settings(payload: Settings):
+async def update_settings(payload: Settings, _admin: bool = Depends(require_admin)):
     data = payload.model_dump()
     data["id"] = "site"
     await db.settings.update_one({"id": "site"}, {"$set": data}, upsert=True)
@@ -470,13 +507,13 @@ async def create_contact(payload: ContactCreate):
 
 
 @api_router.get("/contacts", response_model=List[Contact])
-async def list_contacts():
+async def list_contacts(_admin: bool = Depends(require_admin)):
     contacts = await db.contacts.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return [Contact(**c) for c in contacts]
 
 
 @api_router.delete("/contacts/{contact_id}")
-async def delete_contact(contact_id: str):
+async def delete_contact(contact_id: str, _admin: bool = Depends(require_admin)):
     res = await db.contacts.delete_one({"id": contact_id})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
@@ -509,6 +546,52 @@ def _application_email_html(app_obj: "Application") -> str:
     )
 
 
+_APPLY_CONFIRM = {
+    "en": {
+        "subject": "We've received your application - NEXOIN",
+        "hi": "Hi",
+        "body": "Thanks for your interest in joining NEXOIN. We've received your application and will get back to you.",
+        "role": "Role",
+        "foot": "Sent by NEXOIN B2B Transport. We never ask for passwords or payment details by email.",
+    },
+    "fr": {
+        "subject": "Nous avons bien recu votre candidature - NEXOIN",
+        "hi": "Bonjour",
+        "body": "Merci de votre interet pour NEXOIN. Nous avons bien recu votre candidature et reviendrons vers vous.",
+        "role": "Poste",
+        "foot": "Envoye par NEXOIN B2B Transport. Nous ne demandons jamais de mot de passe ou de coordonnees bancaires par e-mail.",
+    },
+    "de": {
+        "subject": "Wir haben Ihre Bewerbung erhalten - NEXOIN",
+        "hi": "Hallo",
+        "body": "Danke fuer Ihr Interesse an NEXOIN. Wir haben Ihre Bewerbung erhalten und melden uns bei Ihnen.",
+        "role": "Position",
+        "foot": "Gesendet von NEXOIN B2B Transport. Wir fragen niemals per E-Mail nach Passwoertern oder Zahlungsdaten.",
+    },
+}
+
+
+def _application_confirmation_html(app_obj: "Application") -> str:
+    ac = _APPLY_CONFIRM.get((app_obj.language or "en"), _APPLY_CONFIRM["en"])
+    return (
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+        f'style="background:#f4f3ef;padding:32px"><tr><td align="center">'
+        f'<table role="presentation" width="560" cellpadding="0" cellspacing="0" '
+        f'style="background:#ffffff;border:1px solid #e4e4e7">'
+        f'<tr><td style="background:#0a0a0a;padding:20px 28px">'
+        f'<span style="color:#ffffff;font-family:Arial,sans-serif;font-size:20px;font-weight:800">'
+        f'NEXOIN<span style="color:#0044ff">.</span></span></td></tr>'
+        f'<tr><td style="padding:28px;font-family:Arial,sans-serif;color:#0a0a0a">'
+        f'<p style="font-size:16px;margin:0 0 12px">{escape(ac["hi"])} {escape(app_obj.name)},</p>'
+        f'<p style="font-size:14px;line-height:1.6;color:#3f3f46;margin:0 0 16px">{escape(ac["body"])}</p>'
+        f'<p style="font-size:13px;margin:0"><strong>{escape(ac["role"])}:</strong> {escape(app_obj.role)}</p>'
+        f'</td></tr>'
+        f'<tr><td style="padding:16px 28px;border-top:1px solid #e4e4e7">'
+        f'<span style="color:#a1a1aa;font-family:Arial,sans-serif;font-size:12px">{escape(ac["foot"])}</span>'
+        f'</td></tr></table></td></tr></table>'
+    )
+
+
 @api_router.post("/applications", response_model=Application)
 async def create_application(payload: ApplicationCreate):
     application = Application(**payload.model_dump())
@@ -527,17 +610,26 @@ async def create_application(payload: ApplicationCreate):
                 logger.info("Application notification sent to %s", notify_to)
             except Exception as e:
                 logger.error("Application notification failed: %s", str(e))
+        try:
+            await send_email(
+                to=application.email,
+                subject=_APPLY_CONFIRM.get((application.language or "en"), _APPLY_CONFIRM["en"])["subject"],
+                html=_application_confirmation_html(application),
+            )
+            logger.info("Applicant confirmation sent to %s", application.email)
+        except Exception as e:
+            logger.error("Applicant confirmation failed: %s", str(e))
     return application
 
 
 @api_router.get("/applications", response_model=List[Application])
-async def list_applications():
+async def list_applications(_admin: bool = Depends(require_admin)):
     apps = await db.applications.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return [Application(**a) for a in apps]
 
 
 @api_router.delete("/applications/{application_id}")
-async def delete_application(application_id: str):
+async def delete_application(application_id: str, _admin: bool = Depends(require_admin)):
     res = await db.applications.delete_one({"id": application_id})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Application not found")

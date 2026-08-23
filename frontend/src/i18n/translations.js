@@ -52,7 +52,7 @@ export const translations = {
       rights: "All rights reserved.",
       descriptor: "B2B Transport",
       cols: { company: "Company", legal: "Legal", contact: "Contact" },
-      links: { about: "Services", careers: "Focus", press: "Approach", terms: "Terms", privacy: "Privacy", imprint: "Imprint" },
+      links: { about: "Company", careers: "Careers", press: "Contact", terms: "Terms", privacy: "Privacy", imprint: "Imprint" },
     },
     quote: {
       back: "Back",
@@ -132,7 +132,7 @@ export const translations = {
       rights: "Tous droits réservés.",
       descriptor: "Transport B2B",
       cols: { company: "Entreprise", legal: "Légal", contact: "Contact" },
-      links: { about: "Services", careers: "Focus", press: "Approche", terms: "Conditions", privacy: "Confidentialité", imprint: "Mentions légales" },
+      links: { about: "Entreprise", careers: "Carrières", press: "Contact", terms: "Conditions", privacy: "Confidentialité", imprint: "Mentions légales" },
     },
     quote: {
       back: "Retour",
@@ -212,7 +212,7 @@ export const translations = {
       rights: "Alle Rechte vorbehalten.",
       descriptor: "B2B Transport",
       cols: { company: "Unternehmen", legal: "Rechtliches", contact: "Kontakt" },
-      links: { about: "Leistungen", careers: "Fokus", press: "Ansatz", terms: "AGB", privacy: "Datenschutz", imprint: "Impressum" },
+      links: { about: "Unternehmen", careers: "Karriere", press: "Kontakt", terms: "AGB", privacy: "Datenschutz", imprint: "Impressum" },
     },
     quote: {
       back: "Zurück",

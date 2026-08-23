@@ -9,6 +9,7 @@ import Landing from "@/pages/Landing";
 import Quote from "@/pages/Quote";
 import Contact from "@/pages/Contact";
 import Careers from "@/pages/Careers";
+import ContentPage from "@/pages/ContentPage";
 import Admin from "@/pages/Admin";
 
 function App() {
@@ -24,6 +25,10 @@ function App() {
               <Route path="/quote" element={<Quote />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/careers" element={<Careers />} />
+              <Route path="/company" element={<ContentPage pageKey="company" />} />
+              <Route path="/terms" element={<ContentPage pageKey="terms" />} />
+              <Route path="/privacy" element={<ContentPage pageKey="privacy" />} />
+              <Route path="/imprint" element={<ContentPage pageKey="imprint" />} />
               <Route path="/admin" element={<Admin />} />
             </Routes>
           </BrowserRouter>

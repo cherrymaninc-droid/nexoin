@@ -1,12 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { RefreshCw, ArrowLeft, Mail, Phone, MapPin, Package, Search, Settings, Save, Pencil, Trash2, X } from "lucide-react";
+import { RefreshCw, ArrowLeft, Mail, Phone, MapPin, Package, Search, Settings, Save, Pencil, Trash2, X, LogOut, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { useSettings } from "@/context/SettingsContext";
 import { Wordmark } from "@/components/Navbar";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const TOKEN_KEY = "nexoin-admin-token";
+const authHeaders = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}` } });
 
 const STATUSES = ["new", "contacted", "closed"];
 const STATUS_STYLE = {
@@ -36,15 +39,20 @@ export default function Admin() {
   const [filter, setFilter] = useState("all");
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
+  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [qs, cs, as] = await Promise.all([axios.get(`${API}/quotes`), axios.get(`${API}/contacts`), axios.get(`${API}/applications`)]);
+      const [qs, cs, as] = await Promise.all([axios.get(`${API}/quotes`, authHeaders()), axios.get(`${API}/contacts`, authHeaders()), axios.get(`${API}/applications`, authHeaders())]);
       setQuotes(qs.data);
       setContacts(cs.data);
       setApplications(as.data);
     } catch (e) {
+      if (e?.response?.status === 401) {
+        localStorage.removeItem(TOKEN_KEY);
+        setToken(null);
+      }
       toast.error("Failed to load data");
     } finally {
       setLoading(false);
@@ -53,12 +61,17 @@ export default function Admin() {
 
   useEffect(() => {
     document.documentElement.lang = "en";
-    load();
-  }, [load]);
+    if (token) load();
+  }, [load, token]);
+
+  const logout = () => {
+    localStorage.removeItem(TOKEN_KEY);
+    setToken(null);
+  };
 
   const updateStatus = async (id, status) => {
     try {
-      await axios.patch(`${API}/quotes/${id}`, { status });
+      await axios.patch(`${API}/quotes/${id}`, { status }, authHeaders());
       setQuotes((prev) => prev.map((x) => (x.id === id ? { ...x, status } : x)));
       toast.success(`Marked as ${status}`);
     } catch (e) {
@@ -69,7 +82,7 @@ export default function Admin() {
   const deleteQuote = async (id) => {
     if (!window.confirm("Delete this request permanently?")) return;
     try {
-      await axios.delete(`${API}/quotes/${id}`);
+      await axios.delete(`${API}/quotes/${id}`, authHeaders());
       setQuotes((prev) => prev.filter((x) => x.id !== id));
       toast.success("Request deleted");
     } catch (e) {
@@ -80,7 +93,7 @@ export default function Admin() {
   const deleteContact = async (id) => {
     if (!window.confirm("Delete this enquiry permanently?")) return;
     try {
-      await axios.delete(`${API}/contacts/${id}`);
+      await axios.delete(`${API}/contacts/${id}`, authHeaders());
       setContacts((prev) => prev.filter((x) => x.id !== id));
       toast.success("Enquiry deleted");
     } catch (e) {
@@ -91,7 +104,7 @@ export default function Admin() {
   const deleteApplication = async (id) => {
     if (!window.confirm("Delete this application permanently?")) return;
     try {
-      await axios.delete(`${API}/applications/${id}`);
+      await axios.delete(`${API}/applications/${id}`, authHeaders());
       setApplications((prev) => prev.filter((x) => x.id !== id));
       toast.success("Application deleted");
     } catch (e) {
@@ -101,7 +114,7 @@ export default function Admin() {
 
   const saveEdit = async (form) => {
     try {
-      const { data } = await axios.put(`${API}/quotes/${form.id}`, form);
+      const { data } = await axios.put(`${API}/quotes/${form.id}`, form, authHeaders());
       setQuotes((prev) => prev.map((x) => (x.id === form.id ? data : x)));
       setEditing(null);
       toast.success("Request updated");
@@ -117,6 +130,10 @@ export default function Admin() {
   });
 
   const counts = STATUSES.reduce((a, s) => ({ ...a, [s]: quotes.filter((x) => x.status === s).length }), {});
+
+  if (!token) {
+    return <AdminLogin onSuccess={(t) => { localStorage.setItem(TOKEN_KEY, t); setToken(t); }} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#f4f3ef] text-[#0a0a0a]">
@@ -142,6 +159,13 @@ export default function Admin() {
             >
               <ArrowLeft size={14} /> Site
             </Link>
+            <button
+              data-testid="admin-logout"
+              onClick={logout}
+              className="inline-flex items-center gap-2 font-mono-tech text-xs uppercase tracking-widest text-zinc-600 hover:text-red-500 transition-colors"
+            >
+              <LogOut size={14} /> Logout
+            </button>
           </div>
         </div>
       </header>
@@ -437,6 +461,48 @@ function EditModal({ quote, onClose, onSave }) {
   );
 }
 
+function AdminLogin({ onSuccess }) {
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { data } = await axios.post(`${API}/admin/login`, { password });
+      onSuccess(data.token);
+    } catch (err) {
+      toast.error("Invalid password");
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <div className="min-h-screen bg-[#f4f3ef] text-[#0a0a0a] flex items-center justify-center px-6">
+      <form onSubmit={submit} data-testid="admin-login-form" className="w-full max-w-sm">
+        <div className="font-display font-extrabold tracking-tight text-3xl mb-2">NEXOIN<span className="text-[#0044ff]">.</span></div>
+        <p className="font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500 mb-8">Console — restricted access</p>
+        <label className="font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500">Password</label>
+        <input
+          data-testid="admin-password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoFocus
+          className="w-full bg-transparent border-0 border-b border-black/15 h-12 mt-2 text-[#0a0a0a] focus:outline-none focus:border-[#0044ff]"
+        />
+        <button
+          type="submit"
+          data-testid="admin-login-btn"
+          disabled={loading}
+          className="mt-8 w-full inline-flex items-center justify-center gap-2 bg-[#0a0a0a] text-white px-6 py-3 font-mono-tech text-[11px] uppercase tracking-widest hover:bg-[#0044ff] transition-colors disabled:opacity-60"
+        >
+          <Lock size={13} /> {loading ? "Checking…" : "Enter"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function SettingsPanel() {
   const { settings, setSettings } = useSettings();
   const [form, setForm] = useState(settings);
@@ -451,7 +517,7 @@ function SettingsPanel() {
   const save = async () => {
     setSaving(true);
     try {
-      const { data } = await axios.put(`${API}/settings`, form);
+      const { data } = await axios.put(`${API}/settings`, form, authHeaders());
       setSettings({ ...data });
       toast.success("Settings saved");
     } catch (e) {
