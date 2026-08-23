@@ -77,7 +77,9 @@ export const Footer = () => {
                 {settings.contact_phone}
               </a>
             </li>
-            <li data-testid="footer-locations" className="text-zinc-500">{settings.contact_locations}</li>
+            {settings.contact_locations ? (
+              <li data-testid="footer-locations" className="text-zinc-500">{settings.contact_locations}</li>
+            ) : null}
           </ul>
         </div>
       </div>

@@ -45,8 +45,14 @@ Build the official website for **NEXOIN**, a modern European B2B transport & log
 - OWNER_EMAIL / notification_email still a placeholder until the user provides a real inbox (set it in `/admin` → Site settings). Undeliverable placeholder returns 422 but quote/contact still save.
 - `/admin` and `PUT /api/settings` remain unauthenticated (open URL) per user choice.
 
+## Implemented (2026-08-23, iteration 4)
+- **Realistic startup copy** (FR/DE/EN): removed all invented stats/claims (numbers strip replaced by qualitative pillars: Availability/Flexibility/Reliability/Partnership), positioned as a *new* B2B transport company focused on France–Germany, regular routes, express, subcontracting, long-term partnerships. German written naturally for Saarland Speditionen. Brand NEXOIN untranslated.
+- **Real European photos**: replaced generated/US imagery with real stock photos — European lorry (hero), Scania truck + Mercedes Sprinter van (services), European truck corridor (network).
+- **Contact page**: removed the locations block (no invented locations). Footer locations now conditional/hidden when empty; default locations blanked.
+- **Admin full edit**: `/admin` now has full CRUD — edit any quote via modal (all fields + status → PUT /api/quotes/{id}), delete quotes (DELETE), an Enquiries tab listing contact-form submissions with delete (DELETE /api/contacts/{id}), plus the existing Site settings panel and status controls.
+- Backend verified via curl: PUT edit, DELETE quote, DELETE contact, invalid status → 400. Admin edit/delete/enquiries verified via screenshots.
+
 ## Backlog
-- P1: User to set real notification email in admin settings.
-- P2: Optional password/guard for /admin + settings.
-- P2: Validate contact_email as an email in settings.
-- P2: Interactive European route map in Network section.
+- P1: User to set real notification email in admin settings (still placeholder).
+- P2: Optional password/guard for /admin.
+- P2: Interactive European route map.

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
-import { ArrowUpRight, Mail, Phone, MapPin, Check } from "lucide-react";
+import { ArrowUpRight, Mail, Phone, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -119,12 +119,6 @@ export default function Contact() {
               >
                 <Phone size={18} className="text-[#0044ff]" /> {settings.contact_phone}
               </a>
-              <div className="pt-4 border-t border-black/10">
-                <div className="flex items-center gap-2 font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500 mb-2">
-                  <MapPin size={13} className="text-[#0044ff]" /> {c.locations}
-                </div>
-                <p data-testid="contact-locations" className="font-mono-tech text-sm text-zinc-700">{settings.contact_locations}</p>
-              </div>
             </div>
           </div>
 

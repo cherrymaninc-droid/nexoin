@@ -281,6 +281,10 @@ class QuoteStatusUpdate(BaseModel):
     status: str
 
 
+class QuoteEdit(QuoteCreate):
+    status: str = "new"
+
+
 ALLOWED_STATUSES = {"new", "contacted", "closed"}
 
 
@@ -289,7 +293,7 @@ DEFAULT_SETTINGS = {
     "notification_email": "",
     "contact_email": "ops@nexoin.eu",
     "contact_phone": "+32 10 000 000",
-    "contact_locations": "Rotterdam · Frankfurt · Lyon",
+    "contact_locations": "",
 }
 
 
@@ -298,7 +302,7 @@ class Settings(BaseModel):
     notification_email: str = ""
     contact_email: str = "ops@nexoin.eu"
     contact_phone: str = "+32 10 000 000"
-    contact_locations: str = "Rotterdam · Frankfurt · Lyon"
+    contact_locations: str = ""
 
 
 async def get_settings() -> dict:
@@ -396,6 +400,26 @@ async def update_quote_status(quote_id: str, payload: QuoteStatusUpdate):
     return Quote(**result)
 
 
+@api_router.put("/quotes/{quote_id}", response_model=Quote)
+async def edit_quote(quote_id: str, payload: QuoteEdit):
+    if payload.status not in ALLOWED_STATUSES:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    existing = await db.quotes.find_one({"id": quote_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    data = payload.model_dump()
+    await db.quotes.update_one({"id": quote_id}, {"$set": data})
+    return Quote(**{**existing, **data})
+
+
+@api_router.delete("/quotes/{quote_id}")
+async def delete_quote(quote_id: str):
+    res = await db.quotes.delete_one({"id": quote_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    return {"status": "deleted"}
+
+
 @api_router.get("/settings", response_model=Settings)
 async def read_settings():
     return Settings(**await get_settings())
@@ -434,6 +458,14 @@ async def create_contact(payload: ContactCreate):
 async def list_contacts():
     contacts = await db.contacts.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return [Contact(**c) for c in contacts]
+
+
+@api_router.delete("/contacts/{contact_id}")
+async def delete_contact(contact_id: str):
+    res = await db.contacts.delete_one({"id": contact_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return {"status": "deleted"}
 
 
 app.include_router(api_router)

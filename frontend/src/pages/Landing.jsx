@@ -12,10 +12,10 @@ import { useLanguage } from "@/context/LanguageContext";
 import { scrollToId } from "@/hooks/useSmoothScroll";
 
 const IMAGES = {
-  hero: "https://static.prod-images.emergentagent.com/jobs/2d80bc58-a5d4-4a6f-ac9c-71d83914dbad/images/157ec583c00e282fc35c604ea94f031499ba86565fee2ae5c10607a845f8e01f.jpeg",
-  truck: "https://static.prod-images.emergentagent.com/jobs/2d80bc58-a5d4-4a6f-ac9c-71d83914dbad/images/85a8fd185a858f444157f85da358f0579b5ee04491066f9021f40c6e0f01167f.jpeg",
-  van: "https://static.prod-images.emergentagent.com/jobs/2d80bc58-a5d4-4a6f-ac9c-71d83914dbad/images/e672e39e91b7ed3dbe18494920f5ed120235ccc81f33bf8253647ec15dfcfe56.jpeg",
-  highway: "https://images.pexels.com/photos/33707847/pexels-photo-33707847.jpeg",
+  hero: "https://images.unsplash.com/photo-1485575301924-6891ef935dcd?crop=entropy&cs=srgb&fm=jpg&q=85&w=1800",
+  truck: "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
+  van: "https://images.unsplash.com/photo-1684055733361-1fc36972a93d?crop=entropy&cs=srgb&fm=jpg&q=85&w=1200",
+  highway: "https://images.unsplash.com/photo-1591419478162-a4dd21b7ec0a?crop=entropy&cs=srgb&fm=jpg&q=85&w=1600",
 };
 
 const Pillars = () => {
