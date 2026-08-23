@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { RefreshCw, ArrowLeft, Mail, Phone, MapPin, Package, Search, Settings, Save, Pencil, Trash2, X, LogOut, Lock } from "lucide-react";
+import { RefreshCw, ArrowLeft, Mail, Phone, MapPin, Package, Search, Settings, Save, Pencil, Trash2, X, LogOut, Lock, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useSettings } from "@/context/SettingsContext";
 import { Wordmark } from "@/components/Navbar";
@@ -109,6 +109,22 @@ export default function Admin() {
       toast.success("Application deleted");
     } catch (e) {
       toast.error("Delete failed");
+    }
+  };
+
+  const downloadCv = async (x) => {
+    try {
+      const res = await axios.get(`${API}/applications/cv/${x.cv_path}`, { ...authHeaders(), responseType: "blob" });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = x.cv_filename || "cv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      toast.error("Download failed");
     }
   };
 
@@ -380,9 +396,16 @@ export default function Admin() {
                       {x.message ? <p className="mt-3 text-sm text-zinc-600 leading-relaxed">{x.message}</p> : null}
                       <p className="mt-3 font-mono-tech text-[10px] text-zinc-400">{new Date(x.created_at).toLocaleString()}</p>
                     </div>
-                    <button data-testid={`admin-application-delete-${x.id}`} onClick={() => deleteApplication(x.id)} className="self-start inline-flex items-center gap-2 px-4 py-2 font-mono-tech text-[11px] uppercase tracking-widest border border-black/15 text-red-500 hover:border-red-500 transition-colors">
-                      <Trash2 size={12} /> Delete
-                    </button>
+                    <div className="flex flex-col gap-2 shrink-0">
+                      {x.cv_path ? (
+                        <button data-testid={`admin-application-cv-${x.id}`} onClick={() => downloadCv(x)} className="inline-flex items-center gap-2 px-4 py-2 font-mono-tech text-[11px] uppercase tracking-widest border border-black/15 hover:border-[#0044ff] hover:text-[#0044ff] transition-colors">
+                        <Download size={12} /> CV
+                      </button>
+                      ) : null}
+                      <button data-testid={`admin-application-delete-${x.id}`} onClick={() => deleteApplication(x.id)} className="inline-flex items-center gap-2 px-4 py-2 font-mono-tech text-[11px] uppercase tracking-widest border border-black/15 text-red-500 hover:border-red-500 transition-colors">
+                        <Trash2 size={12} /> Delete
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

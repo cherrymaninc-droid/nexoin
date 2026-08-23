@@ -33,6 +33,9 @@ const COPY = {
     submitting: "Sending…",
     success: "Application received. We'll be in touch.",
     error: "Something went wrong. Please try again.",
+    cvLabel: "CV / Resume (PDF, DOC, DOCX)",
+    cvHint: "Attach your CV — max 5MB",
+    cvError: "Please attach a PDF, DOC or DOCX under 5MB.",
   },
   fr: {
     tag: "Carrières",
@@ -51,6 +54,9 @@ const COPY = {
     submitting: "Envoi…",
     success: "Candidature reçue. Nous vous recontactons.",
     error: "Une erreur est survenue. Veuillez réessayer.",
+    cvLabel: "CV (PDF, DOC, DOCX)",
+    cvHint: "Joignez votre CV — max 5 Mo",
+    cvError: "Veuillez joindre un PDF, DOC ou DOCX de moins de 5 Mo.",
   },
   de: {
     tag: "Karriere",
@@ -69,6 +75,9 @@ const COPY = {
     submitting: "Senden…",
     success: "Bewerbung erhalten. Wir melden uns bei Ihnen.",
     error: "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
+    cvLabel: "Lebenslauf (PDF, DOC, DOCX)",
+    cvHint: "Lebenslauf anhängen — max. 5 MB",
+    cvError: "Bitte eine PDF-, DOC- oder DOCX-Datei unter 5 MB anhängen.",
   },
 };
 
@@ -83,6 +92,7 @@ export default function Careers() {
   const [form, setForm] = useState(empty);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [cvFile, setCvFile] = useState(null);
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -90,12 +100,28 @@ export default function Careers() {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (cvFile) {
+      const ext = cvFile.name.split(".").pop().toLowerCase();
+      if (!["pdf", "doc", "docx"].includes(ext) || cvFile.size > 5 * 1024 * 1024) {
+        toast.error(c.cvError);
+        return;
+      }
+    }
     setLoading(true);
     try {
-      await axios.post(`${API}/applications`, { ...form, language: lang });
+      let cv_path = "", cv_filename = "";
+      if (cvFile) {
+        const fd = new FormData();
+        fd.append("file", cvFile);
+        const up = await axios.post(`${API}/upload/cv`, fd, { headers: { "Content-Type": "multipart/form-data" } });
+        cv_path = up.data.path;
+        cv_filename = up.data.filename;
+      }
+      await axios.post(`${API}/applications`, { ...form, cv_path, cv_filename, language: lang });
       setDone(true);
       toast.success(c.success);
       setForm(empty);
+      setCvFile(null);
     } catch (err) {
       toast.error(c.error);
     } finally {
@@ -159,6 +185,14 @@ export default function Careers() {
                     <Textarea data-testid="a-message" rows={4} value={form.message} onChange={set("message")}
                       className="bg-transparent border-0 border-b border-black/15 rounded-none px-0 text-[#0a0a0a] placeholder:text-zinc-400 focus-visible:ring-0 focus-visible:border-[#0044ff] resize-none" />
                   </Field>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500">{c.cvLabel}</label>
+                  <label data-testid="a-cv-label" className="mt-2 flex items-center justify-between gap-4 border border-dashed border-black/25 px-4 py-3.5 cursor-pointer hover:border-[#0044ff] transition-colors">
+                    <span className="font-mono-tech text-xs text-zinc-600 truncate">{cvFile ? cvFile.name : c.cvHint}</span>
+                    <span className="font-mono-tech text-[11px] uppercase tracking-widest text-[#0044ff] shrink-0">Browse</span>
+                    <input data-testid="a-cv" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => setCvFile(e.target.files?.[0] || null)} className="hidden" />
+                  </label>
                 </div>
                 <div className="sm:col-span-2 pt-2">
                   <button type="submit" data-testid="careers-submit-btn" disabled={loading}
