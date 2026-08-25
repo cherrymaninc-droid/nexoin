@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, UploadFile, File, Query, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, UploadFile, File, Form, Query, Request
 from fastapi.responses import Response
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -1005,6 +1005,99 @@ def _crud_routes(name: str, coll, model, input_model):
 
 _crud_routes("clients", db.clients, Client, ClientInput)
 _crud_routes("vehicles", db.vehicles, Vehicle, VehicleInput)
+
+
+# ---- Website CMS (editable content) ---------------------------------------
+class ContentPayload(BaseModel):
+    copy: dict = Field(default_factory=dict)   # { en: {...}, fr: {...}, de: {...} }
+    images: dict = Field(default_factory=dict)  # { hero: url, services_a: url, ... }
+    seo: dict = Field(default_factory=dict)     # { en: {title, description}, ... }
+
+
+@api_router.get("/content")
+async def get_content():
+    doc = await db.site_content.find_one({"id": "site"}, {"_id": 0, "id": 0})
+    return doc or {"copy": {}, "images": {}, "seo": {}}
+
+
+@api_router.put("/content")
+async def put_content(payload: ContentPayload, _u: dict = Depends(admin_only)):
+    data = {
+        "id": "site",
+        "copy": payload.copy,
+        "images": payload.images,
+        "seo": payload.seo,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.site_content.update_one({"id": "site"}, {"$set": data}, upsert=True)
+    return {"copy": payload.copy, "images": payload.images, "seo": payload.seo}
+
+
+# ---- Media Library --------------------------------------------------------
+MEDIA_EXTS = {"jpg", "jpeg", "png", "webp", "gif", "svg"}
+MEDIA_MIME = {
+    "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+    "webp": "image/webp", "gif": "image/gif", "svg": "image/svg+xml",
+}
+MAX_MEDIA_BYTES = 10 * 1024 * 1024
+
+
+@api_router.post("/media/upload")
+async def upload_media(file: UploadFile = File(...), alt: str = Form(""), _u: dict = Depends(staff_manage)):
+    ext = (file.filename.rsplit(".", 1)[-1] if "." in file.filename else "").lower()
+    if ext not in MEDIA_EXTS:
+        raise HTTPException(status_code=400, detail="Allowed: JPG, PNG, WEBP, GIF, SVG")
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Empty file")
+    if len(data) > MAX_MEDIA_BYTES:
+        raise HTTPException(status_code=400, detail="File too large (max 10MB)")
+    path = f"{APP_NAME}/media/{uuid.uuid4()}.{ext}"
+    content_type = MEDIA_MIME.get(ext, file.content_type or "application/octet-stream")
+    try:
+        result = put_object(path, data, content_type)
+    except Exception as e:
+        logger.error("Media upload failed: %s", str(e))
+        raise HTTPException(status_code=502, detail="Upload failed, please try again")
+    stored_path = result.get("path", path)
+    doc = {
+        "id": str(uuid.uuid4()),
+        "storage_path": stored_path,
+        "filename": file.filename,
+        "alt": alt,
+        "content_type": content_type,
+        "size": result.get("size", len(data)),
+        "url": f"/api/media/file/{stored_path}",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.media.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+
+@api_router.get("/media")
+async def list_media(_u: dict = Depends(staff_any)):
+    docs = await db.media.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return docs
+
+
+@api_router.delete("/media/{media_id}")
+async def delete_media(media_id: str, _u: dict = Depends(staff_manage)):
+    res = await db.media.delete_one({"id": media_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"status": "deleted"}
+
+
+@api_router.get("/media/file/{path:path}")
+async def serve_media(path: str):
+    try:
+        data, content_type = get_object(path)
+    except Exception:
+        raise HTTPException(status_code=404, detail="File not found")
+    record = await db.media.find_one({"storage_path": path}, {"_id": 0})
+    ct = (record or {}).get("content_type", content_type)
+    return Response(content=data, media_type=ct, headers={"Cache-Control": "public, max-age=86400"})
+
 
 
 @api_router.get("/dashboard")
