@@ -1,0 +1,46 @@
+{
+  "summary": "Full backend + frontend test of the new staff-account RBAC system (admin/manager/employee) and Admin Dashboard. Backend: 27 pytest cases covering /api/auth/login, /api/auth/me, RBAC matrix per role, /api/users CRUD + guards, bcrypt hash format, and regression on quotes/contacts/applications/settings/dashboard/clients/vehicles -> 25 passed, 2 failed. Frontend: Playwright flows for admin login (email+password), dashboard KPIs + recent panels, Team tab user create/edit/delete, Settings save, quote edit/filter/search, and role-gated UI for manager and employee -> all passed. 2 backend defects found (PUT /api/users duplicate email -> 500; no brute-force lockout on login).",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "PUT /api/users/{id}", "issue": "Changing a user's email to an email already used by another account returns 500 Internal Server Error (MongoDB DuplicateKeyError from the unique 'email' index leaks out). POST /api/users correctly returns 400 - the same duplicate check is missing in update_user().", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "POST /api/auth/login", "issue": "No brute-force protection: 6+ consecutive wrong-password attempts all return 401, no 429/423 lockout or throttling (auth playbook requires lockout after 5 failures)."},
+      {"endpoint": "CORS middleware", "issue": "CORS_ORIGINS=\"*\" combined with allow_credentials=True is an invalid/insecure combination; explicit origins should be listed (playbook requirement). Not user-facing today because the frontend uses Bearer tokens, not cookies."},
+      {"endpoint": "server.py", "issue": "JWT_SECRET falls back to hardcoded 'dev-secret' via os.environ.get default; missing config should fail fast instead of silently using a known secret."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/seed_ui_data.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Fix PUT /api/users/{id}: check for an existing user with the target email (excluding the same id) and return 400 'Email already exists' instead of letting the unique-index DuplicateKeyError bubble up as 500.",
+    "Add login brute-force protection (failed-attempt counter per email/IP with temporary lockout returning 429/423), per the auth playbook.",
+    "Set explicit CORS_ORIGINS (frontend origin) instead of '*' while allow_credentials=True; make JWT_SECRET required (fail fast if missing).",
+    "Optional cleanup: AdminEntities.jsx exports an unused DashboardTab that reuses data-testid=\"admin-dashboard\" (duplicate of Admin.jsx DashboardOverview) - remove it or rename the testid to avoid ambiguous selectors."
+  ],
+  "critical_code_review_comments": [
+    "update_user() validates role/password/last-admin but not email uniqueness -> 500 on duplicate email (confirmed reproducible).",
+    "Role gating in the UI is done with CSS 'hidden' classes and readOnly props; the DOM still contains the Add/Edit buttons for employees (not visible, and the backend correctly returns 403), so this is acceptable but selector counts must use ':visible' in tests.",
+    "server.py is 1041 lines; consider splitting auth/user-management, email templates and CRUD factories into modules (>700 line guideline).",
+    "JWT is stored in localStorage rather than an httpOnly cookie (documented deviation from the auth playbook); acceptable for this app but XSS-exposed."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/seed_ui_data.py"
+  ],
+  "success_rate": {"backend": "93% (25/27 pytest cases)", "frontend": "100% (all tested flows passed)"},
+  "seed_data_creation": "Temporarily created 1 quote, 1 client, 1 vehicle, 1 enquiry, 1 application and a few TEST_ users for UI/API testing - ALL deleted afterwards. DB now has only the 3 seeded staff users (admin/manager/employee) and empty quotes/clients/vehicles/contacts/applications collections. settings.contact_phone was restored to '+32 10 000 000'.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "admin@nexoin.eu / nexoin-admin-2026, manager@nexoin.eu / manager123, employee@nexoin.eu / employee123 (from /app/memory/test_credentials.md - file present and accurate)",
+  "context_for_next_testing_agent": "Regression suite is /app/backend/tests/backend_test.py (run: cd /app/backend && python -m pytest tests/backend_test.py -q). Two tests are expected to fail until fixed: TestAuth::test_brute_force_lockout (no login throttling) and TestUsers::test_update_to_duplicate_email (500 instead of 400). /app/backend/tests/seed_ui_data.py seeds/cleans UI test data (`python seed_ui_data.py seed|clean`). Verified frontend: admin login form (admin-email/admin-password/admin-login-btn), dashboard-card-{clients,vehicles,quotes,applications}, dashboard-recent-quotes/clients, Team tab users CRUD (users-table/users-add/users-f-*/users-save/users-edit-*/users-delete-*), settings save, quote edit modal/filters/search; manager sees no Team/Settings tabs but full clients/vehicles/quote management; employee sees no Team/Settings, read-only clients/vehicles (Add button present in DOM but hidden), no quote edit/delete, but admin-set-* status buttons work (PATCH succeeded, toast 'Marked as contacted').",
+  "rca_of_the_issue": "PUT /api/users/{id} in server.py performs role/password/last-admin validation but never checks whether the new email already belongs to another user. A unique index exists on users.email (created at startup), so update_one raises pymongo.errors.DuplicateKeyError which FastAPI turns into a 500. Repro: POST /api/users to create a user, then PUT that user with email=admin@nexoin.eu -> 500. Fix: `if await db.users.find_one({'email': new_email, 'id': {'$ne': user_id}}): raise HTTPException(400, 'Email already exists')`."
+}

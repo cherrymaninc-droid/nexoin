@@ -249,18 +249,38 @@ def _contact_email_html(contact: "Contact") -> str:
     )
 
 
-# ---- Admin auth (single shared password) ----------------------------------
-JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret")
+# ---- Staff auth (email/password accounts + roles) -------------------------
+import bcrypt
+
+JWT_SECRET = os.environ["JWT_SECRET"]
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@nexoin.eu")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 JWT_ALGORITHM = "HS256"
+ROLES = ("admin", "manager", "employee")
 
 
-def create_admin_token() -> str:
-    payload = {"role": "admin", "exp": datetime.now(timezone.utc) + timedelta(days=7)}
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(plain: str, hashed: str) -> bool:
+    try:
+        return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+    except (ValueError, TypeError):
+        return False
+
+
+def create_token(user: dict) -> str:
+    payload = {
+        "sub": user["id"],
+        "email": user["email"],
+        "role": user["role"],
+        "exp": datetime.now(timezone.utc) + timedelta(days=7),
+    }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-async def require_admin(authorization: str = Header(default="")):
+async def get_current_user(authorization: str = Header(default="")) -> dict:
     token = authorization[7:] if authorization.startswith("Bearer ") else None
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -268,13 +288,75 @@ async def require_admin(authorization: str = Header(default="")):
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
-    if payload.get("role") != "admin":
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return True
+    user = await db.users.find_one({"id": payload.get("sub")}, {"_id": 0, "password_hash": 0})
+    if not user or user.get("status") == "disabled":
+        raise HTTPException(status_code=401, detail="User not found or disabled")
+    return user
 
 
-class AdminLogin(BaseModel):
+def require_roles(*allowed):
+    async def _dep(user: dict = Depends(get_current_user)) -> dict:
+        if user.get("role") not in allowed:
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        return user
+    return _dep
+
+
+# Convenience dependencies
+staff_any = require_roles(*ROLES)          # any authenticated staff
+staff_manage = require_roles("admin", "manager")  # can mutate operational data
+admin_only = require_roles("admin")        # admin-only (settings, user mgmt)
+require_admin = admin_only                 # backward-compat alias
+
+
+class LoginInput(BaseModel):
+    email: EmailStr
     password: str
+
+
+# ---- Brute-force protection (per-email login throttling) -------------------
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_MINUTES = 15
+
+
+async def check_lockout(email: str):
+    doc = await db.login_attempts.find_one({"identifier": email})
+    if not doc:
+        return
+    locked_until = doc.get("locked_until")
+    if locked_until and datetime.now(timezone.utc) < datetime.fromisoformat(locked_until):
+        raise HTTPException(status_code=429, detail="Too many failed attempts. Try again later.")
+
+
+async def register_failed_login(email: str):
+    doc = await db.login_attempts.find_one({"identifier": email})
+    count = (doc.get("count", 0) if doc else 0) + 1
+    update = {"count": count}
+    if count >= MAX_LOGIN_ATTEMPTS:
+        update["locked_until"] = (datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_MINUTES)).isoformat()
+        update["count"] = 0
+    await db.login_attempts.update_one({"identifier": email}, {"$set": update}, upsert=True)
+
+
+async def clear_login_attempts(email: str):
+    await db.login_attempts.delete_one({"identifier": email})
+
+
+class UserInput(BaseModel):
+    email: EmailStr
+    name: str
+    role: str = "employee"
+    password: Optional[str] = None
+    status: Optional[str] = "active"
+
+
+class UserOut(BaseModel):
+    id: str
+    email: str
+    name: str
+    role: str
+    status: str = "active"
+    created_at: Optional[str] = None
 
 
 # ---- Object storage (CV uploads) ------------------------------------------
@@ -437,11 +519,98 @@ async def root():
     return {"message": "NEXOIN API - operational"}
 
 
-@api_router.post("/admin/login")
-async def admin_login(payload: AdminLogin):
-    if not ADMIN_PASSWORD or not hmac.compare_digest(payload.password, ADMIN_PASSWORD):
-        raise HTTPException(status_code=401, detail="Invalid password")
-    return {"token": create_admin_token()}
+@api_router.post("/auth/login")
+async def auth_login(payload: LoginInput):
+    email = payload.email.lower().strip()
+    await check_lockout(email)
+    user = await db.users.find_one({"email": email})
+    if not user or not verify_password(payload.password, user.get("password_hash", "")):
+        await register_failed_login(email)
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    if user.get("status") == "disabled":
+        raise HTTPException(status_code=403, detail="Account disabled")
+    await clear_login_attempts(email)
+    safe = {k: v for k, v in user.items() if k not in ("_id", "password_hash")}
+    return {"token": create_token(safe), "user": UserOut(**safe)}
+
+
+@api_router.get("/auth/me", response_model=UserOut)
+async def auth_me(user: dict = Depends(get_current_user)):
+    return UserOut(**user)
+
+
+# ---- Staff user management (admin only) -----------------------------------
+@api_router.get("/users", response_model=List[UserOut])
+async def list_users(_admin: dict = Depends(admin_only)):
+    docs = await db.users.find({}, {"_id": 0, "password_hash": 0}).sort("created_at", -1).to_list(500)
+    return [UserOut(**d) for d in docs]
+
+
+@api_router.post("/users", response_model=UserOut)
+async def create_user(payload: UserInput, _admin: dict = Depends(admin_only)):
+    if payload.role not in ROLES:
+        raise HTTPException(status_code=400, detail="Invalid role")
+    if not payload.password or len(payload.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    email = payload.email.lower().strip()
+    if await db.users.find_one({"email": email}):
+        raise HTTPException(status_code=400, detail="Email already exists")
+    doc = {
+        "id": str(uuid.uuid4()),
+        "email": email,
+        "name": payload.name,
+        "role": payload.role,
+        "status": payload.status or "active",
+        "password_hash": hash_password(payload.password),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.users.insert_one(doc)
+    return UserOut(**doc)
+
+
+@api_router.put("/users/{user_id}", response_model=UserOut)
+async def update_user(user_id: str, payload: UserInput, _admin: dict = Depends(admin_only)):
+    existing = await db.users.find_one({"id": user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="User not found")
+    if payload.role not in ROLES:
+        raise HTTPException(status_code=400, detail="Invalid role")
+    new_email = payload.email.lower().strip()
+    if await db.users.find_one({"email": new_email, "id": {"$ne": user_id}}):
+        raise HTTPException(status_code=400, detail="Email already exists")
+    update = {
+        "email": new_email,
+        "name": payload.name,
+        "role": payload.role,
+        "status": payload.status or "active",
+    }
+    # Guard: never lock out the last active admin
+    if existing.get("role") == "admin" and (payload.role != "admin" or update["status"] == "disabled"):
+        active_admins = await db.users.count_documents({"role": "admin", "status": {"$ne": "disabled"}})
+        if active_admins <= 1:
+            raise HTTPException(status_code=400, detail="Cannot demote or disable the last admin")
+    if payload.password:
+        if len(payload.password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        update["password_hash"] = hash_password(payload.password)
+    await db.users.update_one({"id": user_id}, {"$set": update})
+    merged = {**existing, **update}
+    return UserOut(**{k: v for k, v in merged.items() if k not in ("_id", "password_hash")})
+
+
+@api_router.delete("/users/{user_id}")
+async def delete_user(user_id: str, admin: dict = Depends(admin_only)):
+    existing = await db.users.find_one({"id": user_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="User not found")
+    if existing["id"] == admin["id"]:
+        raise HTTPException(status_code=400, detail="You cannot delete your own account")
+    if existing.get("role") == "admin":
+        active_admins = await db.users.count_documents({"role": "admin", "status": {"$ne": "disabled"}})
+        if active_admins <= 1:
+            raise HTTPException(status_code=400, detail="Cannot delete the last admin")
+    await db.users.delete_one({"id": user_id})
+    return {"status": "deleted"}
 
 
 @api_router.post("/status", response_model=StatusCheck)
@@ -491,13 +660,13 @@ async def create_quote(payload: QuoteCreate):
 
 
 @api_router.get("/quotes", response_model=List[Quote])
-async def list_quotes(_admin: bool = Depends(require_admin)):
+async def list_quotes(_u: dict = Depends(staff_any)):
     quotes = await db.quotes.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return [Quote(**q) for q in quotes]
 
 
 @api_router.patch("/quotes/{quote_id}", response_model=Quote)
-async def update_quote_status(quote_id: str, payload: QuoteStatusUpdate, _admin: bool = Depends(require_admin)):
+async def update_quote_status(quote_id: str, payload: QuoteStatusUpdate, _u: dict = Depends(staff_any)):
     if payload.status not in ALLOWED_STATUSES:
         raise HTTPException(status_code=400, detail="Invalid status")
     result = await db.quotes.find_one_and_update(
@@ -512,7 +681,7 @@ async def update_quote_status(quote_id: str, payload: QuoteStatusUpdate, _admin:
 
 
 @api_router.put("/quotes/{quote_id}", response_model=Quote)
-async def edit_quote(quote_id: str, payload: QuoteEdit, _admin: bool = Depends(require_admin)):
+async def edit_quote(quote_id: str, payload: QuoteEdit, _u: dict = Depends(staff_manage)):
     if payload.status not in ALLOWED_STATUSES:
         raise HTTPException(status_code=400, detail="Invalid status")
     existing = await db.quotes.find_one({"id": quote_id}, {"_id": 0})
@@ -524,7 +693,7 @@ async def edit_quote(quote_id: str, payload: QuoteEdit, _admin: bool = Depends(r
 
 
 @api_router.delete("/quotes/{quote_id}")
-async def delete_quote(quote_id: str, _admin: bool = Depends(require_admin)):
+async def delete_quote(quote_id: str, _u: dict = Depends(staff_manage)):
     res = await db.quotes.delete_one({"id": quote_id})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Quote not found")
@@ -537,7 +706,7 @@ async def read_settings():
 
 
 @api_router.put("/settings", response_model=Settings)
-async def update_settings(payload: Settings, _admin: bool = Depends(require_admin)):
+async def update_settings(payload: Settings, _u: dict = Depends(admin_only)):
     data = payload.model_dump()
     data["id"] = "site"
     await db.settings.update_one({"id": "site"}, {"$set": data}, upsert=True)
@@ -566,13 +735,13 @@ async def create_contact(payload: ContactCreate):
 
 
 @api_router.get("/contacts", response_model=List[Contact])
-async def list_contacts(_admin: bool = Depends(require_admin)):
+async def list_contacts(_u: dict = Depends(staff_any)):
     contacts = await db.contacts.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return [Contact(**c) for c in contacts]
 
 
 @api_router.delete("/contacts/{contact_id}")
-async def delete_contact(contact_id: str, _admin: bool = Depends(require_admin)):
+async def delete_contact(contact_id: str, _u: dict = Depends(staff_manage)):
     res = await db.contacts.delete_one({"id": contact_id})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
@@ -697,13 +866,13 @@ async def create_application(payload: ApplicationCreate, request: Request):
 
 
 @api_router.get("/applications", response_model=List[Application])
-async def list_applications(_admin: bool = Depends(require_admin)):
+async def list_applications(_u: dict = Depends(staff_any)):
     apps = await db.applications.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return [Application(**a) for a in apps]
 
 
 @api_router.delete("/applications/{application_id}")
-async def delete_application(application_id: str, _admin: bool = Depends(require_admin)):
+async def delete_application(application_id: str, _u: dict = Depends(staff_manage)):
     res = await db.applications.delete_one({"id": application_id})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Application not found")
@@ -751,7 +920,7 @@ async def download_cv(path: str, authorization: str = Header(default=""), auth: 
         if token:
             try:
                 payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-                authorized = payload.get("role") == "admin"
+                authorized = payload.get("role") in ROLES
             except jwt.PyJWTError:
                 authorized = False
     if not authorized:
@@ -807,18 +976,18 @@ class Vehicle(VehicleInput):
 
 def _crud_routes(name: str, coll, model, input_model):
     @api_router.post(f"/{name}", response_model=model, name=f"create_{name}")
-    async def _create(payload: input_model, _admin: bool = Depends(require_admin)):
+    async def _create(payload: input_model, _u: dict = Depends(staff_manage)):
         obj = model(**payload.model_dump())
         await coll.insert_one(obj.model_dump())
         return obj
 
     @api_router.get(f"/{name}", response_model=List[model], name=f"list_{name}")
-    async def _list(_admin: bool = Depends(require_admin)):
+    async def _list(_u: dict = Depends(staff_any)):
         docs = await coll.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
         return [model(**d) for d in docs]
 
     @api_router.put(f"/{name}/{{item_id}}", response_model=model, name=f"update_{name}")
-    async def _update(item_id: str, payload: input_model, _admin: bool = Depends(require_admin)):
+    async def _update(item_id: str, payload: input_model, _u: dict = Depends(staff_manage)):
         existing = await coll.find_one({"id": item_id}, {"_id": 0})
         if not existing:
             raise HTTPException(status_code=404, detail="Not found")
@@ -827,7 +996,7 @@ def _crud_routes(name: str, coll, model, input_model):
         return model(**{**existing, **data})
 
     @api_router.delete(f"/{name}/{{item_id}}", name=f"delete_{name}")
-    async def _delete(item_id: str, _admin: bool = Depends(require_admin)):
+    async def _delete(item_id: str, _u: dict = Depends(staff_manage)):
         res = await coll.delete_one({"id": item_id})
         if res.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Not found")
@@ -836,6 +1005,22 @@ def _crud_routes(name: str, coll, model, input_model):
 
 _crud_routes("clients", db.clients, Client, ClientInput)
 _crud_routes("vehicles", db.vehicles, Vehicle, VehicleInput)
+
+
+@api_router.get("/dashboard")
+async def dashboard(_u: dict = Depends(staff_any)):
+    return {
+        "clients": await db.clients.count_documents({}),
+        "clients_active": await db.clients.count_documents({"status": "active"}),
+        "vehicles": await db.vehicles.count_documents({}),
+        "vehicles_available": await db.vehicles.count_documents({"status": "available"}),
+        "quotes": await db.quotes.count_documents({}),
+        "quotes_new": await db.quotes.count_documents({"status": "new"}),
+        "applications": await db.applications.count_documents({}),
+        "contacts": await db.contacts.count_documents({}),
+        "recent_clients": await db.clients.find({}, {"_id": 0}).sort("created_at", -1).to_list(5),
+        "recent_quotes": await db.quotes.find({}, {"_id": 0}).sort("created_at", -1).to_list(5),
+    }
 
 
 app.include_router(api_router)
@@ -848,8 +1033,37 @@ app.add_middleware(
 )
 
 
+async def seed_admin():
+    """Idempotently ensure a default admin account exists and matches .env."""
+    if not ADMIN_PASSWORD:
+        logger.warning("ADMIN_PASSWORD not set; skipping admin seed")
+        return
+    email = ADMIN_EMAIL.lower().strip()
+    existing = await db.users.find_one({"email": email})
+    if existing is None:
+        await db.users.insert_one({
+            "id": str(uuid.uuid4()),
+            "email": email,
+            "name": "Administrator",
+            "role": "admin",
+            "status": "active",
+            "password_hash": hash_password(ADMIN_PASSWORD),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+        logger.info("Seeded default admin account: %s", email)
+    elif not verify_password(ADMIN_PASSWORD, existing.get("password_hash", "")):
+        await db.users.update_one({"email": email}, {"$set": {"password_hash": hash_password(ADMIN_PASSWORD), "role": "admin", "status": "active"}})
+        logger.info("Updated default admin password from .env")
+
+
 @app.on_event("startup")
-async def _init_storage():
+async def _startup():
+    try:
+        await db.users.create_index("email", unique=True)
+        await db.login_attempts.create_index("identifier", unique=True)
+        await seed_admin()
+    except Exception as e:
+        logger.error("Admin seed failed: %s", str(e))
     try:
         init_storage()
         logger.info("Object storage initialized")

@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { RefreshCw, ArrowLeft, Mail, Phone, MapPin, Package, Search, Settings, Save, Pencil, Trash2, X, LogOut, Lock, Download } from "lucide-react";
+import { RefreshCw, ArrowLeft, Mail, Phone, MapPin, Package, Search, Settings, Save, Pencil, Trash2, X, LogOut, Lock, Download, LayoutDashboard, Users, Truck, FileText, Briefcase, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 import { useSettings } from "@/context/SettingsContext";
-import { CrudSection, CLIENT_FIELDS, CLIENT_COLUMNS, VEHICLE_FIELDS, VEHICLE_COLUMNS } from "@/pages/AdminEntities";
+import { CrudSection, CLIENT_FIELDS, CLIENT_COLUMNS, VEHICLE_FIELDS, VEHICLE_COLUMNS, USER_FIELDS, USER_COLUMNS } from "@/pages/AdminEntities";
 import { Wordmark } from "@/components/Navbar";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -32,23 +32,32 @@ const EDIT_FIELDS = [
 ];
 
 export default function Admin() {
-  const [tab, setTab] = useState("quotes");
+  const [tab, setTab] = useState("dashboard");
   const [quotes, setQuotes] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [me, setMe] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
 
+  const role = me?.role;
+  const isAdmin = role === "admin";
+  const canManage = role === "admin" || role === "manager";
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [qs, cs, as] = await Promise.all([axios.get(`${API}/quotes`, authHeaders()), axios.get(`${API}/contacts`, authHeaders()), axios.get(`${API}/applications`, authHeaders())]);
+      const meRes = await axios.get(`${API}/auth/me`, authHeaders());
+      setMe(meRes.data);
+      const [qs, cs, as, st] = await Promise.all([axios.get(`${API}/quotes`, authHeaders()), axios.get(`${API}/contacts`, authHeaders()), axios.get(`${API}/applications`, authHeaders()), axios.get(`${API}/dashboard`, authHeaders())]);
       setQuotes(qs.data);
       setContacts(cs.data);
       setApplications(as.data);
+      setStats(st.data);
     } catch (e) {
       if (e?.response?.status === 401) {
         localStorage.removeItem(TOKEN_KEY);
@@ -68,6 +77,7 @@ export default function Admin() {
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
     setToken(null);
+    setMe(null);
   };
 
   const updateStatus = async (id, status) => {
@@ -163,6 +173,11 @@ export default function Admin() {
             <span className="hidden sm:inline font-mono-tech text-[11px] uppercase tracking-[0.3em] text-zinc-500">/ Console</span>
           </div>
           <div className="flex items-center gap-4">
+            {me && (
+              <span data-testid="admin-current-user" className="hidden md:inline font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500">
+                {me.name} · <span className="text-[#0044ff]">{me.role}</span>
+              </span>
+            )}
             <button
               data-testid="admin-refresh"
               onClick={load}
@@ -188,16 +203,22 @@ export default function Admin() {
       </header>
 
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-10 md:py-14">
-        <SettingsPanel />
-
         {/* Tabs */}
-        <div className="flex items-center gap-2 mb-10 border-b border-black/10">
-          {[["quotes", `Quotes (${quotes.length})`], ["clients", "Clients"], ["vehicles", "Vehicles"], ["contacts", `Enquiries (${contacts.length})`], ["applications", `Applications (${applications.length})`]].map(([k, label]) => (
+        <div className="flex items-center gap-2 mb-10 border-b border-black/10 overflow-x-auto">
+          {[
+            ["dashboard", "Dashboard"],
+            ["quotes", `Quotes (${quotes.length})`],
+            ["clients", "Clients"],
+            ["vehicles", "Vehicles"],
+            ["contacts", `Enquiries (${contacts.length})`],
+            ["applications", `Applications (${applications.length})`],
+            ...(isAdmin ? [["team", "Team"], ["settings", "Settings"]] : []),
+          ].map(([k, label]) => (
             <button
               key={k}
               data-testid={`admin-tab-${k}`}
               onClick={() => setTab(k)}
-              className={`px-5 py-3 font-mono-tech text-[11px] uppercase tracking-widest border-b-2 -mb-px transition-colors ${
+              className={`px-5 py-3 whitespace-nowrap font-mono-tech text-[11px] uppercase tracking-widest border-b-2 -mb-px transition-colors ${
                 tab === k ? "border-[#0044ff] text-[#0a0a0a]" : "border-transparent text-zinc-500 hover:text-zinc-800"
               }`}
             >
@@ -205,6 +226,14 @@ export default function Admin() {
             </button>
           ))}
         </div>
+
+        {tab === "dashboard" && <DashboardOverview stats={stats} loading={loading} onGo={setTab} me={me} />}
+
+        {tab === "team" && isAdmin && (
+          <CrudSection endpoint="users" title="Team." columns={USER_COLUMNS} fields={USER_FIELDS} onChanged={load} />
+        )}
+
+        {tab === "settings" && isAdmin && <SettingsPanel />}
 
         {tab === "quotes" && (
           <>
@@ -309,6 +338,7 @@ export default function Admin() {
                         </button>
                       ))}
                       <div className="flex gap-2 mt-2">
+                        {canManage && <>
                         <button
                           data-testid={`admin-edit-${x.id}`}
                           onClick={() => setEditing(x)}
@@ -323,6 +353,7 @@ export default function Admin() {
                         >
                           <Trash2 size={12} /> Delete
                         </button>
+                        </>}
                       </div>
                     </div>
                   </div>
@@ -333,11 +364,11 @@ export default function Admin() {
         )}
 
         {tab === "clients" && (
-          <CrudSection endpoint="clients" title="Clients." columns={CLIENT_COLUMNS} fields={CLIENT_FIELDS} />
+          <CrudSection endpoint="clients" title="Clients." columns={CLIENT_COLUMNS} fields={CLIENT_FIELDS} readOnly={!canManage} />
         )}
 
         {tab === "vehicles" && (
-          <CrudSection endpoint="vehicles" title="Vehicles." columns={VEHICLE_COLUMNS} fields={VEHICLE_FIELDS} />
+          <CrudSection endpoint="vehicles" title="Vehicles." columns={VEHICLE_COLUMNS} fields={VEHICLE_FIELDS} readOnly={!canManage} />
         )}
 
         {tab === "contacts" && (
@@ -365,13 +396,13 @@ export default function Admin() {
                       <p className="mt-3 text-sm text-zinc-600 leading-relaxed">{x.message}</p>
                       <p className="mt-3 font-mono-tech text-[10px] text-zinc-400">{new Date(x.created_at).toLocaleString()}</p>
                     </div>
-                    <button
+                    {canManage && <button
                       data-testid={`admin-contact-delete-${x.id}`}
                       onClick={() => deleteContact(x.id)}
                       className="self-start inline-flex items-center gap-2 px-4 py-2 font-mono-tech text-[11px] uppercase tracking-widest border border-black/15 text-red-500 hover:border-red-500 transition-colors"
                     >
                       <Trash2 size={12} /> Delete
-                    </button>
+                    </button>}
                   </div>
                 ))}
               </div>
@@ -411,7 +442,7 @@ export default function Admin() {
                         <Download size={12} /> CV
                       </button>
                       ) : null}
-                      <button data-testid={`admin-application-delete-${x.id}`} onClick={() => deleteApplication(x.id)} className="inline-flex items-center gap-2 px-4 py-2 font-mono-tech text-[11px] uppercase tracking-widest border border-black/15 text-red-500 hover:border-red-500 transition-colors">
+                      <button data-testid={`admin-application-delete-${x.id}`} onClick={() => deleteApplication(x.id)} className={`inline-flex items-center gap-2 px-4 py-2 font-mono-tech text-[11px] uppercase tracking-widest border border-black/15 text-red-500 hover:border-red-500 transition-colors ${canManage ? "" : "hidden"}`}>
                         <Trash2 size={12} /> Delete
                       </button>
                     </div>
@@ -424,6 +455,90 @@ export default function Admin() {
       </div>
 
       {editing ? <EditModal quote={editing} onClose={() => setEditing(null)} onSave={saveEdit} /> : null}
+    </div>
+  );
+}
+
+function DashboardOverview({ stats, loading, onGo, me }) {
+  if (loading || !stats) {
+    return <div className="py-24 text-center font-mono-tech text-sm text-zinc-500">Loading overview…</div>;
+  }
+
+  const cards = [
+    { key: "clients", label: "Clients", icon: Users, value: stats.clients, sub: `${stats.clients_active} active`, go: "clients" },
+    { key: "vehicles", label: "Vehicles", icon: Truck, value: stats.vehicles, sub: `${stats.vehicles_available} available`, go: "vehicles" },
+    { key: "quotes", label: "Quote requests", icon: FileText, value: stats.quotes, sub: `${stats.quotes_new} new`, go: "quotes" },
+    { key: "applications", label: "Applications", icon: Briefcase, value: stats.applications, sub: `${stats.contacts} enquiries`, go: "applications" },
+  ];
+
+  return (
+    <div data-testid="admin-dashboard">
+      <div className="flex items-center gap-3 mb-10">
+        <LayoutDashboard size={24} className="text-[#0044ff]" />
+        <div>
+          <h1 className="font-display font-extrabold tracking-tighter text-4xl md:text-6xl leading-none">Overview.</h1>
+          {me && <p className="mt-2 font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500">Welcome back, {me.name} · {me.role}</p>}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-14">
+        {cards.map((c) => (
+          <button
+            key={c.key}
+            data-testid={`dashboard-card-${c.key}`}
+            onClick={() => onGo(c.go)}
+            className="group text-left bg-white border border-black/10 p-6 md:p-8 hover:border-[#0044ff] transition-colors"
+          >
+            <div className="flex items-start justify-between">
+              <c.icon size={20} className="text-[#0044ff]" />
+              <ArrowUpRight size={16} className="text-zinc-300 group-hover:text-[#0044ff] transition-colors" />
+            </div>
+            <div className="mt-6 font-display font-extrabold tracking-tighter text-5xl">{c.value}</div>
+            <div className="mt-2 font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500">{c.label}</div>
+            <div className="mt-1 font-mono-tech text-[11px] text-[#0044ff]">{c.sub}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div className="bg-white border border-black/10 p-6 md:p-8" data-testid="dashboard-recent-quotes">
+          <h2 className="font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500 mb-6">Recent quote requests</h2>
+          {(!stats.recent_quotes || stats.recent_quotes.length === 0) ? (
+            <p className="font-mono-tech text-xs text-zinc-400">No quotes yet.</p>
+          ) : (
+            <div className="divide-y divide-black/5">
+              {stats.recent_quotes.map((x, i) => (
+                <div key={i} className="py-3 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="font-display font-bold text-base truncate">{x.company || x.name}</p>
+                    <p className="font-mono-tech text-[11px] text-zinc-500 truncate">{x.origin} → {x.destination}</p>
+                  </div>
+                  <span className={`shrink-0 px-2 py-1 font-mono-tech text-[10px] uppercase tracking-widest ${STATUS_STYLE[x.status] || ""}`}>{x.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white border border-black/10 p-6 md:p-8" data-testid="dashboard-recent-clients">
+          <h2 className="font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500 mb-6">Recent clients</h2>
+          {(!stats.recent_clients || stats.recent_clients.length === 0) ? (
+            <p className="font-mono-tech text-xs text-zinc-400">No clients yet.</p>
+          ) : (
+            <div className="divide-y divide-black/5">
+              {stats.recent_clients.map((x, i) => (
+                <div key={i} className="py-3 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="font-display font-bold text-base truncate">{x.company_name}</p>
+                    <p className="font-mono-tech text-[11px] text-zinc-500 truncate">{x.contact_person || x.email}</p>
+                  </div>
+                  <span className="shrink-0 font-mono-tech text-[10px] uppercase tracking-widest text-zinc-400">{x.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -494,16 +609,17 @@ function EditModal({ quote, onClose, onSave }) {
 }
 
 function AdminLogin({ onSuccess }) {
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const submit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await axios.post(`${API}/admin/login`, { password });
+      const { data } = await axios.post(`${API}/auth/login`, { email, password });
       onSuccess(data.token);
     } catch (err) {
-      toast.error("Invalid password");
+      toast.error(err?.response?.data?.detail || "Invalid email or password");
     } finally {
       setLoading(false);
     }
@@ -513,13 +629,21 @@ function AdminLogin({ onSuccess }) {
       <form onSubmit={submit} data-testid="admin-login-form" className="w-full max-w-sm">
         <div className="font-display font-extrabold tracking-tight text-3xl mb-2">NEXOIN<span className="text-[#0044ff]">.</span></div>
         <p className="font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500 mb-8">Console — restricted access</p>
+        <label className="font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500">Email</label>
+        <input
+          data-testid="admin-email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoFocus
+          className="w-full bg-transparent border-0 border-b border-black/15 h-12 mt-2 mb-6 text-[#0a0a0a] focus:outline-none focus:border-[#0044ff]"
+        />
         <label className="font-mono-tech text-[11px] uppercase tracking-widest text-zinc-500">Password</label>
         <input
           data-testid="admin-password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          autoFocus
           className="w-full bg-transparent border-0 border-b border-black/15 h-12 mt-2 text-[#0a0a0a] focus:outline-none focus:border-[#0044ff]"
         />
         <button

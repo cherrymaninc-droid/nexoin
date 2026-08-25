@@ -7,7 +7,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const TOKEN_KEY = "nexoin-admin-token";
 const AH = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}` } });
 
-export function CrudSection({ endpoint, title, columns, fields, searchKeys }) {
+export function CrudSection({ endpoint, title, columns, fields, searchKeys, readOnly = false, onChanged }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -38,8 +38,9 @@ export function CrudSection({ endpoint, title, columns, fields, searchKeys }) {
       }
       setEditing(null);
       toast.success("Saved");
+      onChanged && onChanged();
     } catch (e) {
-      toast.error("Save failed");
+      toast.error(e?.response?.data?.detail || "Save failed");
     }
   };
 
@@ -49,8 +50,9 @@ export function CrudSection({ endpoint, title, columns, fields, searchKeys }) {
       await axios.delete(`${API}/${endpoint}/${id}`, AH());
       setItems((p) => p.filter((x) => x.id !== id));
       toast.success("Deleted");
+      onChanged && onChanged();
     } catch (e) {
-      toast.error("Delete failed");
+      toast.error(e?.response?.data?.detail || "Delete failed");
     }
   };
 
@@ -74,7 +76,7 @@ export function CrudSection({ endpoint, title, columns, fields, searchKeys }) {
               className="bg-white border border-black/10 pl-9 pr-4 h-11 w-52 text-sm focus:outline-none focus:border-[#0044ff]" />
           </div>
           <button data-testid={`${endpoint}-add`} onClick={() => setEditing(emptyForm)}
-            className="inline-flex items-center gap-2 bg-[#0044ff] text-white px-5 h-11 font-mono-tech text-[11px] uppercase tracking-widest hover:bg-[#0a0a0a] transition-colors">
+            className={`inline-flex items-center gap-2 bg-[#0044ff] text-white px-5 h-11 font-mono-tech text-[11px] uppercase tracking-widest hover:bg-[#0a0a0a] transition-colors ${readOnly ? "hidden" : ""}`}>
             <Plus size={14} /> Add
           </button>
         </div>
@@ -90,7 +92,7 @@ export function CrudSection({ endpoint, title, columns, fields, searchKeys }) {
             <thead>
               <tr className="border-b border-black/10 text-left font-mono-tech text-[10px] uppercase tracking-widest text-zinc-500">
                 {columns.map((c) => <th key={c.key} className="px-5 py-3 font-medium">{c.label}</th>)}
-                <th className="px-5 py-3 text-right">Actions</th>
+                {!readOnly && <th className="px-5 py-3 text-right">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -103,10 +105,12 @@ export function CrudSection({ endpoint, title, columns, fields, searchKeys }) {
                       ) : (c.render ? c.render(x) : (x[c.key] || "—"))}
                     </td>
                   ))}
-                  <td className="px-5 py-4 text-right whitespace-nowrap">
-                    <button data-testid={`${endpoint}-edit-${x.id}`} onClick={() => setEditing(x)} className="text-zinc-500 hover:text-[#0044ff] p-1.5"><Pencil size={15} /></button>
-                    <button data-testid={`${endpoint}-delete-${x.id}`} onClick={() => remove(x.id)} className="text-zinc-500 hover:text-red-500 p-1.5"><Trash2 size={15} /></button>
-                  </td>
+                  {!readOnly && (
+                    <td className="px-5 py-4 text-right whitespace-nowrap">
+                      <button data-testid={`${endpoint}-edit-${x.id}`} onClick={() => setEditing(x)} className="text-zinc-500 hover:text-[#0044ff] p-1.5"><Pencil size={15} /></button>
+                      <button data-testid={`${endpoint}-delete-${x.id}`} onClick={() => remove(x.id)} className="text-zinc-500 hover:text-red-500 p-1.5"><Trash2 size={15} /></button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -196,5 +200,19 @@ export const VEHICLE_COLUMNS = [
   { key: "registration", label: "Reg." },
   { key: "vehicle_type", label: "Type" },
   { key: "assigned_driver", label: "Driver" },
+  { key: "status", label: "Status", badge: true },
+];
+
+export const USER_FIELDS = [
+  { key: "name", label: "Full name", required: true },
+  { key: "email", label: "Email", type: "email", required: true },
+  { key: "role", label: "Role", type: "select", options: ["admin", "manager", "employee"], default: "employee" },
+  { key: "status", label: "Status", type: "select", options: ["active", "disabled"], default: "active" },
+  { key: "password", label: "Password (blank = keep unchanged)", type: "password" },
+];
+export const USER_COLUMNS = [
+  { key: "name", label: "Name" },
+  { key: "email", label: "Email" },
+  { key: "role", label: "Role", badge: true },
   { key: "status", label: "Status", badge: true },
 ];

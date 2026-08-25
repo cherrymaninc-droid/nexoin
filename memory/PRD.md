@@ -54,5 +54,27 @@ Build the official website for **NEXOIN**, a modern European B2B transport & log
 
 ## Backlog
 - P1: User to set real notification email in admin settings (still placeholder).
-- P2: Optional password/guard for /admin.
 - P2: Interactive European route map.
+
+## Implemented (2026-08-25, iteration 5)
+- **Admin Dashboard overview**: new default "Dashboard" tab in `/admin` with clickable KPI cards (clients/active, vehicles/available, quotes/new, applications/enquiries) + recent quotes & recent clients panels. Backend `GET /api/dashboard` (role: any staff).
+- **Staff Accounts & Roles (RBAC)** — replaces the single shared `ADMIN_PASSWORD` gate:
+  - Real user accounts in `db.users` (bcrypt hashes). Email/password login `POST /api/auth/login` → `{token, user}`; `GET /api/auth/me`. Bearer-JWT transport (localStorage) retained.
+  - Roles **admin / manager / employee** enforced on the backend via `require_roles` deps (`staff_any`, `staff_manage`, `admin_only`).
+    - admin: everything + Team (user mgmt) + Settings.
+    - manager: view + create/update/delete operational data (quotes, clients, vehicles), delete enquiries/applications. No team/settings.
+    - employee: view dashboard + lists, update quote status only. No create/update/delete, no team/settings.
+  - **User management** (admin only): `GET/POST/PUT/DELETE /api/users` with guards — unique email (create + update), min 6-char password, valid role, cannot delete own account, cannot delete/demote/disable the last admin. Team tab UI in admin.
+  - **Idempotent admin seed** on startup from `ADMIN_EMAIL`/`ADMIN_PASSWORD` (.env). Unique index on `users.email`.
+  - **Brute-force protection**: `login_attempts` collection, 5 failed logins per email → 15-min lockout (HTTP 429).
+  - `JWT_SECRET` now required (fail-fast).
+  - Role-aware admin UI: email+password login, Team/Settings tabs admin-only, read-only Clients/Vehicles + hidden edit/delete for employees.
+- Verified: pytest suite 27/27 (`/app/backend/tests/backend_test.py`); frontend flows 100% (testing_agent iteration_4). DB left clean (3 seeded staff users).
+
+## Roadmap (remaining)
+- P0: **Website CMS** — admin editor for homepage/hero/about/contact copy + SEO metadata per language (FR/EN/DE), stored in MongoDB (move copy out of `translations.js`).
+- P1: **Media Library** — upload & assign images to website sections.
+- P1: **Brand Assets** — manage NEXOIN logos (SVG/PNG, light/dark, icon) + guidelines.
+- P2: **Audit Log** — track user actions under RBAC.
+- P1: User to set real notification email in admin settings.
+
