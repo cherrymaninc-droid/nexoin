@@ -4,6 +4,7 @@ import axios from "axios";
 import { RefreshCw, ArrowLeft, Mail, Phone, MapPin, Package, Search, Settings, Save, Pencil, Trash2, X, LogOut, Lock, Download } from "lucide-react";
 import { toast } from "sonner";
 import { useSettings } from "@/context/SettingsContext";
+import { CrudSection, CLIENT_FIELDS, CLIENT_COLUMNS, VEHICLE_FIELDS, VEHICLE_COLUMNS } from "@/pages/AdminEntities";
 import { Wordmark } from "@/components/Navbar";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -191,7 +192,7 @@ export default function Admin() {
 
         {/* Tabs */}
         <div className="flex items-center gap-2 mb-10 border-b border-black/10">
-          {[["quotes", `Quotes (${quotes.length})`], ["contacts", `Enquiries (${contacts.length})`], ["applications", `Applications (${applications.length})`]].map(([k, label]) => (
+          {[["quotes", `Quotes (${quotes.length})`], ["clients", "Clients"], ["vehicles", "Vehicles"], ["contacts", `Enquiries (${contacts.length})`], ["applications", `Applications (${applications.length})`]].map(([k, label]) => (
             <button
               key={k}
               data-testid={`admin-tab-${k}`}
@@ -329,6 +330,14 @@ export default function Admin() {
               </div>
             )}
           </>
+        )}
+
+        {tab === "clients" && (
+          <CrudSection endpoint="clients" title="Clients." columns={CLIENT_COLUMNS} fields={CLIENT_FIELDS} />
+        )}
+
+        {tab === "vehicles" && (
+          <CrudSection endpoint="vehicles" title="Vehicles." columns={VEHICLE_COLUMNS} fields={VEHICLE_FIELDS} />
         )}
 
         {tab === "contacts" && (

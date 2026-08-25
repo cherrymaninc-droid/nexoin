@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, UploadFile, File, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, UploadFile, File, Query, Request
 from fastapi.responses import Response
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -8,6 +8,7 @@ import re
 import ipaddress
 import logging
 import hmac
+import secrets
 import httpx
 import requests
 import jwt
@@ -578,7 +579,15 @@ async def delete_contact(contact_id: str, _admin: bool = Depends(require_admin))
     return {"status": "deleted"}
 
 
-def _application_email_html(app_obj: "Application") -> str:
+def _application_email_html(app_obj: "Application", cv_link: str = None) -> str:
+    cv_row = ""
+    if cv_link:
+        cv_row = (
+            f'<p style="margin:18px 0 0"><a href="{cv_link}" '
+            f'style="display:inline-block;background:#0044ff;color:#ffffff;text-decoration:none;'
+            f'font-family:Arial,sans-serif;font-size:13px;font-weight:700;padding:11px 20px">'
+            f'Download CV</a></p>'
+        )
     return (
         f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
         f'style="background:#f4f3ef;padding:32px"><tr><td align="center">'
@@ -597,6 +606,7 @@ def _application_email_html(app_obj: "Application") -> str:
         f'<p style="font-size:14px;margin:0 0 6px"><strong>Role:</strong> {escape(app_obj.role)}</p>'
         f'<p style="font-size:14px;margin:16px 0 0;line-height:1.6;color:#3f3f46">'
         f'{escape(app_obj.message) if app_obj.message else ""}</p>'
+        f'{cv_row}'
         f'</td></tr>'
         f'<tr><td style="padding:16px 28px;border-top:1px solid #e4e4e7">'
         f'<span style="color:#a1a1aa;font-family:Arial,sans-serif;font-size:12px">'
@@ -651,19 +661,25 @@ def _application_confirmation_html(app_obj: "Application") -> str:
 
 
 @api_router.post("/applications", response_model=Application)
-async def create_application(payload: ApplicationCreate):
+async def create_application(payload: ApplicationCreate, request: Request):
     application = Application(**payload.model_dump())
     await db.applications.insert_one(application.model_dump())
     logger.info("New application from %s (%s) for %s", application.name, application.email, application.role)
     if EMAIL_KEY:
         settings = await get_settings()
         notify_to = settings.get("notification_email") or OWNER_EMAIL
+        cv_link = None
+        if application.cv_path:
+            origin = (request.headers.get("origin") or str(request.base_url)).rstrip("/")
+            dl = secrets.token_urlsafe(20)
+            await db.files.update_one({"storage_path": application.cv_path}, {"$set": {"download_token": dl}})
+            cv_link = f"{origin}/api/applications/cv/{application.cv_path}?t={dl}"
         if notify_to:
             try:
                 await send_email(
                     to=notify_to,
                     subject=f"New application: {application.role} - {application.name}",
-                    html=_application_email_html(application),
+                    html=_application_email_html(application, cv_link),
                 )
                 logger.info("Application notification sent to %s", notify_to)
             except Exception as e:
@@ -725,8 +741,21 @@ async def upload_cv(file: UploadFile = File(...)):
 
 
 @api_router.get("/applications/cv/{path:path}")
-async def download_cv(path: str, _admin: bool = Depends(require_admin)):
+async def download_cv(path: str, authorization: str = Header(default=""), auth: str = Query(default=None), t: str = Query(default=None)):
     record = await db.files.find_one({"storage_path": path, "is_deleted": False}, {"_id": 0})
+    authorized = False
+    if t and record and record.get("download_token") and hmac.compare_digest(t, record["download_token"]):
+        authorized = True
+    else:
+        token = authorization[7:] if authorization.startswith("Bearer ") else (auth or None)
+        if token:
+            try:
+                payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+                authorized = payload.get("role") == "admin"
+            except jwt.PyJWTError:
+                authorized = False
+    if not authorized:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     try:
         data, content_type = get_object(path)
     except Exception:
@@ -736,8 +765,80 @@ async def download_cv(path: str, _admin: bool = Depends(require_admin)):
     return Response(content=data, media_type=ct, headers={"Content-Disposition": f'attachment; filename="{fname}"'})
 
 
-app.include_router(api_router)
+class ClientInput(BaseModel):
+    company_name: str
+    contact_person: Optional[str] = ""
+    phone: Optional[str] = ""
+    email: Optional[str] = ""
+    address: Optional[str] = ""
+    vat_number: Optional[str] = ""
+    notes: Optional[str] = ""
+    status: Optional[str] = "active"
 
+
+class Client(ClientInput):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+class VehicleInput(BaseModel):
+    make: str
+    model: Optional[str] = ""
+    registration: Optional[str] = ""
+    vin: Optional[str] = ""
+    year: Optional[str] = ""
+    vehicle_type: Optional[str] = ""
+    cargo_capacity: Optional[str] = ""
+    max_weight: Optional[str] = ""
+    mileage: Optional[str] = ""
+    inspection_expiry: Optional[str] = ""
+    insurance_expiry: Optional[str] = ""
+    assigned_driver: Optional[str] = ""
+    notes: Optional[str] = ""
+    status: Optional[str] = "available"
+
+
+class Vehicle(VehicleInput):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+def _crud_routes(name: str, coll, model, input_model):
+    @api_router.post(f"/{name}", response_model=model, name=f"create_{name}")
+    async def _create(payload: input_model, _admin: bool = Depends(require_admin)):
+        obj = model(**payload.model_dump())
+        await coll.insert_one(obj.model_dump())
+        return obj
+
+    @api_router.get(f"/{name}", response_model=List[model], name=f"list_{name}")
+    async def _list(_admin: bool = Depends(require_admin)):
+        docs = await coll.find({}, {"_id": 0}).sort("created_at", -1).to_list(2000)
+        return [model(**d) for d in docs]
+
+    @api_router.put(f"/{name}/{{item_id}}", response_model=model, name=f"update_{name}")
+    async def _update(item_id: str, payload: input_model, _admin: bool = Depends(require_admin)):
+        existing = await coll.find_one({"id": item_id}, {"_id": 0})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Not found")
+        data = payload.model_dump()
+        await coll.update_one({"id": item_id}, {"$set": data})
+        return model(**{**existing, **data})
+
+    @api_router.delete(f"/{name}/{{item_id}}", name=f"delete_{name}")
+    async def _delete(item_id: str, _admin: bool = Depends(require_admin)):
+        res = await coll.delete_one({"id": item_id})
+        if res.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Not found")
+        return {"status": "deleted"}
+
+
+_crud_routes("clients", db.clients, Client, ClientInput)
+_crud_routes("vehicles", db.vehicles, Vehicle, VehicleInput)
+
+
+app.include_router(api_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
